@@ -11,6 +11,12 @@ bun run dev            # terminal 2: app en http://localhost:3016 (proxy /api �
 bun run build          # salida en dist/
 ```
 
+### Despliegue en Vercel
+El frontend (Vite) y el backend se despliegan juntos: `api/chat.ts` y `api/space-weather.ts` son funciones serverless que reutilizan `server/chat.ts` y `server/space-weather.ts` (los mismos handlers que usa `bun run api` en local).
+1. Sube el proyecto (o redepliega) en Vercel; `vercel.json` ya define build (`bun run build`) y salida (`dist`).
+2. En **Project → Settings → Environment Variables** agrega `GROQ_API_KEY` y `NASA_API_KEY`.
+3. Redepliega para que las funciones lean las variables.
+
 ### Datos de la NASA
 - **NASA DONKI** (clima espacial, en vivo): `GET /api/space-weather` en `server/index.ts` consulta eventos de partículas solares (SEP) y llamaradas (FLR) con caché de 30 min. Usa `NASA_API_KEY` (gratis en api.nasa.gov) o `DEMO_KEY`. Alimenta el indicador “Eventos de partículas solares” (Inmunidad). En la tarjeta de clima espacial hay un interruptor para simular una tormenta en la demo.
 - **NASA OSDR OSD-575** (SpaceX Inspiration4, panel metabólico): `public/data/inspiration4-cmp.json` (derivado del CSV público). Compara glucosa, calcio y creatinina con una tripulación real en la pestaña Tendencias; los rangos de laboratorio definen los umbrales de calcio y creatinina.
