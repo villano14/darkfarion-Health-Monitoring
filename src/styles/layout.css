@@ -2,7 +2,10 @@
 .app {
   height: 100dvh;
   display: grid;
+  /* minmax(0, 1fr): never let wide content stretch the page past the viewport */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: var(--top-h) minmax(0, 1fr);
+  overflow: hidden;
 }
 [hidden] { display: none !important; }
 
