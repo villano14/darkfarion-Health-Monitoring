@@ -1,42 +1,88 @@
-/* Design tokens — NASA blue as primary, NASA red reserved for alerts. */
+/*
+ * Design tokens.
+ * Brand: NASA Blue #0B3D91 (the one accent) and NASA Red #FC3D21 (alerts only).
+ * Added for health status: green (normal) and amber (watch), each with a dark ink for text.
+ * The interface stays mostly neutral; color is reserved for actions and status.
+ */
 :root {
-  --bg: #f4f5f7;
+  /* Neutrals */
+  --bg: #f4f6f9;
+  --bg-sunken: #eceff4;
   --surface: #ffffff;
   --ink: #0b1426;
-  --muted: #5b6676;
-  --line: #e3e6eb;
+  --ink-2: #2b3547;
+  --muted: #566070;
+  --line: #0b14261c;
+  --line-strong: #0b142638;
 
-  --primary: #0b3d91;
-  --primary-hover: #0a347c;
-  --primary-soft: #e7edf8;
+  /* NASA brand */
+  --nasa-blue: #0b3d91;
+  --nasa-red: #fc3d21;
 
-  --alert: #fc3d21;
-  --alert-ink: #c22a12;
-  --alert-soft: #ffece8;
-  --watch: #f2a900;
-  --watch-ink: #8a5f00;
-  --watch-soft: #fff6db;
+  /* Accent (actions, links, focus, selection) */
+  --primary: var(--nasa-blue);
+  --primary-hover: #0a3274;
+  --primary-soft: #e8eef8;
+  --primary-line: #0b3d9133;
+
+  /* Status */
+  --alert: var(--nasa-red);
+  --alert-ink: #b3260f;
+  --alert-soft: #ffede9;
+  --watch: #f2b705;
+  --watch-ink: #7a5300;
+  --watch-soft: #fff5d6;
   --normal: #2e9e6b;
-  --normal-ink: #1f7a51;
-  --normal-soft: #e4f5ec;
-  --empty: #c9ced6;
+  --normal-ink: #1b6b47;
+  --normal-soft: #e5f5ec;
 
-  --radius: 14px;
-  --radius-sm: 10px;
-  --shadow: 0 1px 2px #0b142608, 0 6px 24px #0b14260d;
+  /* Spacing scale (4 → 48) */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+
+  /* One radius family */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 20px;
+  --r-pill: 999px;
+
+  /* Type */
   --font: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --t-label: 13px;
+  --t-body: 15px;
+  --t-read: 16px;
+  --t-title: 18px;
+  --t-figure: 26px;
 
-  --top-h: 60px;
+  /* Elevation */
+  --shadow-sm: 0 1px 2px #0b14260a;
+  --shadow: 0 1px 2px #0b14260a, 0 8px 24px #0b14260f;
+  --shadow-lg: 0 24px 64px #0b142633;
+
+  /* Motion */
+  --m-in: 150ms;
+  --m-out: 120ms;
+  --m-press: 90ms;
+  --m-slide: 240ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Shell */
+  --btn-h: 44px;
+  --top-h: 64px;
   --time-h: 64px;
-  --side-w: 256px;
-  --detail-w: 340px;
-  --gap: 16px;
+  --detail-w: 380px;
+  --tab-h: 64px;
 }
 
 @media (max-width: 1100px) {
-  :root { --side-w: 216px; --detail-w: 300px; }
+  :root { --detail-w: 340px; }
 }
 
 @media (max-width: 760px) {
-  :root { --top-h: 56px; --time-h: 60px; --gap: 12px; }
+  :root { --top-h: 56px; --time-h: 56px; }
 }

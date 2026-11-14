@@ -1,0 +1,229 @@
+{
+ "source": "NASA Open Science Data Repository, OSD-575 (LSDS-8): SpaceX Inspiration4 Comprehensive Metabolic Panel",
+ "url": "https://osdr.nasa.gov/bio/repo/data/studies/OSD-575",
+ "mission": "Inspiration4, 3-day LEO mission, September 2021, 4 crew",
+ "timepoints": [
+  "L-92",
+  "L-44",
+  "L-3",
+  "R+1",
+  "R+45",
+  "R+82",
+  "R+194"
+ ],
+ "labRanges": {
+  "glucose": {
+   "min": 65.0,
+   "max": 99.0,
+   "unit": "mg/dL"
+  },
+  "calcium": {
+   "min": 8.6,
+   "max": 10.3,
+   "unit": "mg/dL"
+  },
+  "creatinine": {
+   "min": 0.6,
+   "max": 1.35,
+   "unit": "mg/dL"
+  }
+ },
+ "samples": [
+  {
+   "crew": "C001",
+   "timepoint": "L-92",
+   "glucose": 83.0,
+   "calcium": 9.7,
+   "creatinine": 1.24
+  },
+  {
+   "crew": "C001",
+   "timepoint": "L-44",
+   "glucose": 80.0,
+   "calcium": 10.0,
+   "creatinine": 1.1
+  },
+  {
+   "crew": "C001",
+   "timepoint": "L-3",
+   "glucose": 69.0,
+   "calcium": 9.6,
+   "creatinine": 1.37
+  },
+  {
+   "crew": "C001",
+   "timepoint": "R+1",
+   "glucose": 90.0,
+   "calcium": 9.7,
+   "creatinine": 1.12
+  },
+  {
+   "crew": "C001",
+   "timepoint": "R+45",
+   "glucose": 84.0,
+   "calcium": 9.6,
+   "creatinine": 1.11
+  },
+  {
+   "crew": "C001",
+   "timepoint": "R+82",
+   "glucose": 91.0,
+   "calcium": 10.1,
+   "creatinine": 1.25
+  },
+  {
+   "crew": "C001",
+   "timepoint": "R+194",
+   "glucose": 87.0,
+   "calcium": 9.4,
+   "creatinine": 1.29
+  },
+  {
+   "crew": "C002",
+   "timepoint": "L-92",
+   "glucose": 69.0,
+   "calcium": 10.2,
+   "creatinine": 0.83
+  },
+  {
+   "crew": "C002",
+   "timepoint": "L-44",
+   "glucose": 72.0,
+   "calcium": 9.7,
+   "creatinine": 0.88
+  },
+  {
+   "crew": "C002",
+   "timepoint": "L-3",
+   "glucose": 78.0,
+   "calcium": 9.3,
+   "creatinine": 0.96
+  },
+  {
+   "crew": "C002",
+   "timepoint": "R+1",
+   "glucose": 83.0,
+   "calcium": 9.2,
+   "creatinine": 0.95
+  },
+  {
+   "crew": "C002",
+   "timepoint": "R+45",
+   "glucose": 44.0,
+   "calcium": 9.3,
+   "creatinine": 1.02
+  },
+  {
+   "crew": "C002",
+   "timepoint": "R+82",
+   "glucose": 77.0,
+   "calcium": 9.7,
+   "creatinine": 0.82
+  },
+  {
+   "crew": "C002",
+   "timepoint": "R+194",
+   "glucose": 84.0,
+   "calcium": 9.5,
+   "creatinine": 1.02
+  },
+  {
+   "crew": "C003",
+   "timepoint": "L-92",
+   "glucose": 77.0,
+   "calcium": 9.3,
+   "creatinine": 1.0
+  },
+  {
+   "crew": "C003",
+   "timepoint": "L-44",
+   "glucose": 62.0,
+   "calcium": 10.3,
+   "creatinine": 1.03
+  },
+  {
+   "crew": "C003",
+   "timepoint": "L-3",
+   "glucose": 75.0,
+   "calcium": 9.5,
+   "creatinine": 1.08
+  },
+  {
+   "crew": "C003",
+   "timepoint": "R+1",
+   "glucose": 103.0,
+   "calcium": 9.4,
+   "creatinine": 0.89
+  },
+  {
+   "crew": "C003",
+   "timepoint": "R+45",
+   "glucose": 36.0,
+   "calcium": 9.6,
+   "creatinine": 0.94
+  },
+  {
+   "crew": "C003",
+   "timepoint": "R+82",
+   "glucose": 80.0,
+   "calcium": 10.0,
+   "creatinine": 0.89
+  },
+  {
+   "crew": "C003",
+   "timepoint": "R+194",
+   "glucose": 73.0,
+   "calcium": 9.6,
+   "creatinine": 1.1
+  },
+  {
+   "crew": "C004",
+   "timepoint": "L-92",
+   "glucose": 100.0,
+   "calcium": 10.0,
+   "creatinine": 1.14
+  },
+  {
+   "crew": "C004",
+   "timepoint": "L-44",
+   "glucose": 83.0,
+   "calcium": 10.1,
+   "creatinine": 1.08
+  },
+  {
+   "crew": "C004",
+   "timepoint": "L-3",
+   "glucose": 56.0,
+   "calcium": 10.2,
+   "creatinine": 1.13
+  },
+  {
+   "crew": "C004",
+   "timepoint": "R+1",
+   "glucose": 97.0,
+   "calcium": 9.8,
+   "creatinine": 1.15
+  },
+  {
+   "crew": "C004",
+   "timepoint": "R+45",
+   "glucose": 43.0,
+   "calcium": 9.8,
+   "creatinine": 1.08
+  },
+  {
+   "crew": "C004",
+   "timepoint": "R+82",
+   "glucose": 80.0,
+   "calcium": 10.0,
+   "creatinine": 1.11
+  },
+  {
+   "crew": "C004",
+   "timepoint": "R+194",
+   "glucose": 84.0,
+   "calcium": 9.8,
+   "creatinine": 1.31
+  }
+ ]
+}

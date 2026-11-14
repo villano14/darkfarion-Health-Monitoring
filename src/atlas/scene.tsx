@@ -7,18 +7,38 @@ import {decodeModelResponse} from './model-download';
 import {PointerTap} from './pointer-tap';
 import type {Atlas, Part, SystemId} from './anatomy';
 
+export type ViewDirection = 'angle' | 'front' | 'side' | 'back';
+const DIRECTIONS: Record<ViewDirection, T.Vector3> = {
+  angle: new T.Vector3(0.35, 0.06, 1).normalize(),
+  front: new T.Vector3(0, 0.03, 1).normalize(),
+  side: new T.Vector3(1, 0.03, 0).normalize(),
+  back: new T.Vector3(0, 0.03, -1).normalize(),
+};
+
+export interface Insets {top: number; right: number; bottom: number; left?: number}
+/** Parts painted over the base body (an affected organ or zone). */
+export interface Highlight {ids: string[]; color: string; pulse: boolean}
+
 export interface SceneProps {
   atlas: Atlas;
   /** Systems rendered (and pickable). */
   visible: SystemId[];
   /** Color per system. Missing systems use the neutral color. */
   colors: Partial<Record<SystemId, string>>;
-  /** Systems that softly pulse (alert state). */
-  pulse: SystemId[];
+  /** Opacity per system (default 1). Translucent systems let inner organs show through and are picked last. */
+  opacity?: Partial<Record<SystemId, number>>;
+  /** Affected organs or zones, painted on top of their system's base color. */
+  highlights: Highlight[];
   /** Part ids to frame. Null frames the whole body. */
   focus: string[] | null;
+  /** Pixels covered by overlays (panels, sheets); the body is framed in the free area. */
+  insets?: Insets;
+  /** Camera direction; bump `n` to re-apply the same direction (reset). */
+  view: {direction: ViewDirection; n: number};
   /** Called on tap: the tapped part, or null for empty space. */
   onPick: (part: Part | null) => void;
+  /** Called while the mouse hovers parts. */
+  onHover?: (part: Part | null) => void;
   onProgress: (percent: number) => void;
   onError: (message: string) => void;
 }
@@ -26,7 +46,8 @@ export interface SceneProps {
 const NEUTRAL = '#dfe4ea';
 /** Bones sit in front of most organs; prefer anything else when both are hit. */
 const LOW_PRIORITY: SystemId[] = ['skeletal'];
-const VIEW = new T.Vector3(0.35, 0.06, 1).normalize();
+/** Outer layers: picked only when nothing inside was hit. */
+const OUTER: SystemId[] = ['muscular', 'connective'];
 
 export default function AnatomyScene(props: SceneProps) {
   const host = useRef<HTMLDivElement>(null);
@@ -78,11 +99,21 @@ export default function AnatomyScene(props: SceneProps) {
     // One material and one mesh list per anatomical system.
     const materials = new Map<SystemId, T.MeshStandardMaterial>();
     const meshes = new Map<SystemId, T.Mesh[]>();
+    const opacityOf = (system: SystemId) => latest.current.opacity?.[system] ?? 1;
+    const applyOpacity = (system: SystemId, m: T.MeshStandardMaterial) => {
+      const o = opacityOf(system), transparent = o < 1;
+      if (m.transparent !== transparent) m.needsUpdate = true;
+      m.transparent = transparent;
+      m.opacity = o;
+      m.depthWrite = !transparent;
+      meshes.get(system)?.forEach(mesh => { mesh.renderOrder = transparent ? 1 : 0; });
+    };
     const material = (system: SystemId) => {
       let m = materials.get(system);
       if (!m) {
         m = new T.MeshStandardMaterial({color: latest.current.colors[system] ?? NEUTRAL, metalness: 0.06, roughness: 0.55, side: T.DoubleSide});
         materials.set(system, m);
+        applyOpacity(system, m);
       }
       return m;
     };
@@ -90,6 +121,40 @@ export default function AnatomyScene(props: SceneProps) {
     const bounds = atlas.parts.map(p => new T.Box3(new T.Vector3().fromArray(p.bounds[0]), new T.Vector3().fromArray(p.bounds[1])));
     const body = bounds.reduce((box, b) => box.union(b), new T.Box3());
     const pickers: (T.Mesh | undefined)[] = [];
+    const indexOf = new Map(atlas.parts.map((p, i) => [p.id, i]));
+
+    // Overlays reuse each part's own geometry with a polygon offset so they win the depth test.
+    const overlays = new T.Group();
+    scene.add(overlays);
+    let overlayMaterials: {m: T.MeshStandardMaterial; pulse: boolean}[] = [];
+    let overlaysDirty = true;
+    const buildOverlays = () => {
+      overlays.clear();
+      overlayMaterials.forEach(o => o.m.dispose());
+      overlayMaterials = [];
+      const visible = new Set(latest.current.visible);
+      for (const h of latest.current.highlights) {
+        const m = new T.MeshStandardMaterial({
+          color: h.color, metalness: 0.06, roughness: 0.5, side: T.DoubleSide,
+          polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4,
+          // Rendered in the transparent pass (opacity stays 1) so renderOrder puts it after translucent layers.
+          transparent: true, depthWrite: true,
+        });
+        m.emissive.set(h.color);
+        m.emissiveIntensity = 0;
+        overlayMaterials.push({m, pulse: h.pulse});
+        for (const id of h.ids) {
+          const i = indexOf.get(id), base = i !== undefined ? pickers[i] : undefined;
+          if (!base || !visible.has(atlas.parts[i!].system)) continue;
+          const mesh = new T.Mesh(base.geometry, m);
+          mesh.renderOrder = 2;
+          mesh.frustumCulled = false;
+          overlays.add(mesh);
+        }
+      }
+      overlaysDirty = false;
+      dirty = true;
+    };
     const geometries: T.BufferGeometry[] = [];
 
     // --- Loading -----------------------------------------------------------
@@ -121,10 +186,12 @@ export default function AnatomyScene(props: SceneProps) {
         const mesh = new T.Mesh(merged, material(system));
         mesh.frustumCulled = false;
         mesh.visible = latest.current.visible.includes(system);
+        mesh.renderOrder = opacityOf(system) < 1 ? 1 : 0;
         scene.add(mesh);
         meshes.set(system, [...(meshes.get(system) ?? []), mesh]);
       });
       loaded++;
+      overlaysDirty = true;
       latest.current.onProgress(Math.round((loaded / atlas.chunks.length) * 100));
       dirty = true;
     };
@@ -141,14 +208,22 @@ export default function AnatomyScene(props: SceneProps) {
 
     // --- Camera framing with a smooth tween --------------------------------
     const goalTarget = new T.Vector3(), goalPosition = new T.Vector3();
+    let direction = DIRECTIONS[latest.current.view.direction];
     let tweening = false;
     const frameBox = (box: T.Box3, instant: boolean) => {
       const size = box.getSize(new T.Vector3()), center = box.getCenter(new T.Vector3());
+      // Shift the projection so the frame is centered in the area not covered by overlays.
+      const w = el.clientWidth, h = el.clientHeight, i = latest.current.insets ?? {top: 0, right: 0, bottom: 0};
+      const top = Math.min(i.top, h * 0.4), bottom = Math.min(i.bottom, h * 0.6);
+      const right = Math.min(i.right, w * 0.45), left = Math.min(i.left ?? 0, w * 0.45);
+      if (top || bottom || right || left) camera.setViewOffset(w, h, (right - left) / 2, (bottom - top) / 2, w, h);
+      else camera.clearViewOffset();
+      const usableW = Math.max(120, w - right - left), usableH = Math.max(120, h - top - bottom);
       // Never frame less than ~0.5 m so small organs keep their surroundings.
-      const fit = Math.max(size.y, size.x / camera.aspect, 0.42) * 1.2;
+      const fit = Math.max(size.y, size.x / (usableW / usableH), 0.42) * 1.2 * (h / usableH);
       const distance = Math.max(0.25, fit / (2 * Math.tan(T.MathUtils.degToRad(camera.fov / 2))) + size.z / 2);
       goalTarget.copy(center);
-      goalPosition.copy(center).addScaledVector(VIEW, distance);
+      goalPosition.copy(center).addScaledVector(direction, distance);
       if (instant) {
         controls.target.copy(goalTarget);
         camera.position.copy(goalPosition);
@@ -180,52 +255,72 @@ export default function AnatomyScene(props: SceneProps) {
 
     // --- Picking -------------------------------------------------------------
     const raycaster = new T.Raycaster(), pointer = new T.Vector2(), tap = new PointerTap(), hit = new T.Vector3();
-    const pick = (e: PointerEvent) => {
+    const hitTest = (e: PointerEvent): Part | null => {
       const rect = renderer.domElement.getBoundingClientRect();
       pointer.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
       raycaster.setFromCamera(pointer, camera);
       const visible = new Set(latest.current.visible);
-      let best = -1, bestDistance = Infinity, fallback = -1, fallbackDistance = Infinity;
+      const painted = new Set(latest.current.highlights.flatMap(h => h.ids));
+      // Priority: painted (at-risk) zones, then solid parts, then translucent layers and bones.
+      // Lower tier wins; distance breaks ties within a tier.
+      const tierOf = (p: Part) => {
+        if (painted.has(p.id)) return 0;
+        const translucent = opacityOf(p.system) < 0.6;
+        if (OUTER.includes(p.system)) return translucent ? 4 : 3;
+        if (LOW_PRIORITY.includes(p.system)) return translucent ? 3 : 2;
+        return translucent ? 2 : 1;
+      };
+      let index = -1, bestTier = Infinity, bestDistance = Infinity;
       atlas.parts.forEach((p, i) => {
         const mesh = pickers[i];
         if (!mesh || !visible.has(p.system) || !raycaster.ray.intersectBox(bounds[i], hit)) return;
         const d = raycaster.intersectObject(mesh, false)[0]?.distance;
         if (d === undefined) return;
-        if (LOW_PRIORITY.includes(p.system)) {
-          if (d < fallbackDistance) { fallbackDistance = d; fallback = i; }
-        } else if (d < bestDistance) { bestDistance = d; best = i; }
+        const tier = tierOf(p);
+        if (tier < bestTier || (tier === bestTier && d < bestDistance)) { bestTier = tier; bestDistance = d; index = i; }
       });
-      const index = best >= 0 ? best : fallback;
-      latest.current.onPick(index >= 0 ? atlas.parts[index] : null);
+      return index >= 0 ? atlas.parts[index] : null;
     };
+    let lastHover = 0, hovered: Part | null = null;
+    const hover = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse' || e.buttons || !loaded || !latest.current.onHover) return;
+      const t = performance.now();
+      if (t - lastHover < 70) return;
+      lastHover = t;
+      const part = hitTest(e);
+      if (part !== hovered) { hovered = part; latest.current.onHover(part); }
+    };
+    const leave = () => { if (hovered) { hovered = null; latest.current.onHover?.(null); } };
     const canvas = renderer.domElement;
     const onDown = (e: PointerEvent) => tap.down(e.pointerId, e.clientX, e.clientY, e.pointerType === 'touch' ? 12 : 5);
-    const onMove = (e: PointerEvent) => tap.move(e.pointerId, e.clientX, e.clientY);
-    const onUp = (e: PointerEvent) => { if (tap.up(e.pointerId, e.clientX, e.clientY) && loaded > 0) pick(e); };
+    const onMove = (e: PointerEvent) => { tap.move(e.pointerId, e.clientX, e.clientY); hover(e); };
+    const onUp = (e: PointerEvent) => { if (tap.up(e.pointerId, e.clientX, e.clientY) && loaded > 0) latest.current.onPick(hitTest(e)); };
     const onCancel = (e: PointerEvent) => tap.cancel(e.pointerId);
     canvas.addEventListener('pointerdown', onDown);
     canvas.addEventListener('pointermove', onMove);
     canvas.addEventListener('pointerup', onUp);
     canvas.addEventListener('pointercancel', onCancel);
+    canvas.addEventListener('pointerleave', leave);
     const onContextLost = (e: Event) => { e.preventDefault(); latest.current.onError('The 3D view was paused by your device. Reload to continue.'); };
     canvas.addEventListener('webglcontextlost', onContextLost);
 
     // --- Render loop -------------------------------------------------------
     const clock = new T.Clock();
     let last: SceneProps | null = null;
-    const color = new T.Color();
     const animate = () => {
       if (disposed) return;
       frame = requestAnimationFrame(animate);
       const dt = Math.min(clock.getDelta(), 0.05), p = latest.current;
 
-      if (!last || p.visible !== last.visible || p.colors !== last.colors) {
+      if (!last || p.visible !== last.visible || p.colors !== last.colors || p.opacity !== last.opacity) {
         const visible = new Set(p.visible);
         meshes.forEach((list, system) => list.forEach(m => { m.visible = visible.has(system); }));
-        materials.forEach((m, system) => m.color.set(p.colors[system] ?? NEUTRAL));
+        materials.forEach((m, system) => { m.color.set(p.colors[system] ?? NEUTRAL); applyOpacity(system, m); });
         dirty = true;
       }
-      if (!last || p.focus !== last.focus) frameBox(focusBox(), !last);
+      if (overlaysDirty || !last || p.highlights !== last.highlights || p.visible !== last.visible) buildOverlays();
+      if (last && p.view !== last.view) direction = DIRECTIONS[p.view.direction];
+      if (!last || p.focus !== last.focus || p.view !== last.view || p.insets !== last.insets) frameBox(focusBox(), !last);
       last = p;
 
       if (tweening) {
@@ -236,14 +331,12 @@ export default function AnatomyScene(props: SceneProps) {
         dirty = true;
       }
 
-      // Alert systems breathe with a soft emissive glow.
-      const pulse = new Set(p.pulse);
-      const glow = 0.12 + 0.12 * Math.sin(clock.elapsedTime * 3.2);
-      materials.forEach((m, system) => {
-        const on = pulse.has(system) && p.visible.includes(system);
-        m.emissive.copy(on ? color.set(p.colors[system] ?? NEUTRAL) : color.set(0x000000));
-        m.emissiveIntensity = on ? glow : 0;
-        if (on) dirty = true;
+      // High-risk zones breathe with a soft emissive glow.
+      const glow = 0.1 + 0.14 * Math.sin(clock.elapsedTime * 3.2);
+      overlayMaterials.forEach(o => {
+        if (!o.pulse) return;
+        o.m.emissiveIntensity = glow;
+        dirty = true;
       });
 
       controls.update();
@@ -262,6 +355,7 @@ export default function AnatomyScene(props: SceneProps) {
       controls.dispose();
       geometries.forEach(g => g.dispose());
       materials.forEach(m => m.dispose());
+      overlayMaterials.forEach(o => o.m.dispose());
       env.dispose();
       renderer.dispose();
       canvas.remove();
