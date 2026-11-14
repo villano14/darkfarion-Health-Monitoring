@@ -56,19 +56,17 @@
   }
   .systems::-webkit-scrollbar { display: none; }
 
+  /* With a selection the stage shrinks and the scene reframes above the panel. */
+  .app.has-selection {
+    grid-template-rows: var(--top-h) auto minmax(0, 1fr) auto var(--time-h);
+    grid-template-areas: 'top' 'sys' 'stage' 'detail' 'time';
+  }
   .detail {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: calc(var(--time-h) + env(safe-area-inset-bottom));
-    max-height: 55dvh;
-    z-index: 20;
+    max-height: 46dvh;
     border: 0;
     border-radius: var(--radius) var(--radius) 0 0;
     box-shadow: 0 -8px 32px #0b142614;
-    transform: translateY(calc(100% + var(--time-h) + 20px));
-    transition: transform 0.28s ease;
+    z-index: 1;
   }
-  .has-selection .detail { transform: none; }
-  .detail-overview { display: none; }
+  .app:not(.has-selection) .detail { display: none; }
 }

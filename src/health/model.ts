@@ -156,33 +156,40 @@ export interface Group {
   hazards: Hazard[];
   why: string;
   systems: SystemId[];
+  /** Neutral systems shown around the group for context. */
+  context?: SystemId[];
   /** Which parts the camera frames when the group is selected. */
   focus?: (p: Part) => boolean;
 }
+
+/** Vertical center of a part, in meters. */
+const center = (p: Part) => (p.bounds[0][1] + p.bounds[1][1]) / 2;
 
 export const GROUPS: Group[] = [
   {
     id: 'heart', name: 'Heart', systems: ['cardiac', 'arterial', 'venous'],
     role: 'Pumps blood to every tissue.', hazards: ['Gravity', 'Radiation'],
     why: 'Without gravity, fluids shift to the head and the heart adapts. Radiation may damage vessels.',
-    focus: p => p.system === 'cardiac',
+    focus: p => p.system === 'cardiac' && center(p) < 1.45, // brain ventricles are tagged cardiac in the source
   },
   {
     id: 'brain', name: 'Brain', systems: ['nervous'],
     role: 'Controls sleep, mood, and focus.', hazards: ['Isolation', 'Distance'],
     why: 'Confinement, distance from home, and shifted light cycles disrupt sleep and mood.',
-    focus: p => p.system === 'nervous' && (p.bounds[0][1] + p.bounds[1][1]) / 2 > 1.45,
+    focus: p => p.system === 'nervous' && center(p) > 1.45,
   },
   {
     id: 'metabolism', name: 'Metabolism', systems: ['digestive'],
     role: 'Turns food into energy.', hazards: ['Closed environment', 'Gravity'],
     why: 'Limited menus and less activity can change how the body handles sugar.',
-    focus: p => p.system === 'digestive' && (p.bounds[0][1] + p.bounds[1][1]) / 2 < 1.4,
+    context: ['arterial', 'venous'],
+    focus: p => p.system === 'digestive' && center(p) < 1.4,
   },
   {
     id: 'immune', name: 'Immune', systems: ['lymphatic'],
     role: 'Defends against infection.', hazards: ['Radiation', 'Closed environment'],
     why: 'Stress and radiation weaken immunity while microbes thrive in a closed cabin.',
+    context: ['arterial', 'venous'],
     focus: p => p.system === 'lymphatic',
   },
   {

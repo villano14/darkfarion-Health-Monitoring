@@ -50,7 +50,7 @@ export default function App() {
 
   // Scene inputs: memoized so the scene only reacts to real changes.
   const visible = useMemo<SystemId[]>(
-    () => (selected ? [...new Set<SystemId>([...GROUP[selected].systems, 'skeletal'])] : OVERVIEW),
+    () => (selected ? [...GROUP[selected].systems, ...(GROUP[selected].context ?? [])] : OVERVIEW),
     [selected],
   );
   const colors = useMemo(() => {

@@ -144,7 +144,8 @@ export default function AnatomyScene(props: SceneProps) {
     let tweening = false;
     const frameBox = (box: T.Box3, instant: boolean) => {
       const size = box.getSize(new T.Vector3()), center = box.getCenter(new T.Vector3());
-      const fit = Math.max(size.y, size.x / camera.aspect) * 1.25;
+      // Never frame less than ~0.5 m so small organs keep their surroundings.
+      const fit = Math.max(size.y, size.x / camera.aspect, 0.42) * 1.2;
       const distance = Math.max(0.25, fit / (2 * Math.tan(T.MathUtils.degToRad(camera.fov / 2))) + size.z / 2);
       goalTarget.copy(center);
       goalPosition.copy(center).addScaledVector(VIEW, distance);

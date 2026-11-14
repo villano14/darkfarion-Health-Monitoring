@@ -10,11 +10,11 @@ bun run build    # salida en dist/
 ```
 
 ## Estructura
-- `src/atlas/scene.tsx` — escena Three.js (carga, render, picking, explosión, aislamiento).
-- `src/atlas/anatomy.ts` — tipos, sistemas y colores.
-- `src/App.tsx` — estado de la escena (`SceneState`) y overlay mínimo.
+- `src/atlas/` — escena Three.js (carga del modelo, color por sistema, pulso de alerta, encuadre animado, selección).
+- `src/health/model.ts` — indicadores, umbrales, acciones, sistemas del cuerpo, entornos.
+- `src/health/data.ts` — datos simulados de la misión + entradas del astronauta (localStorage).
+- `src/components/` — TopBar, SystemList, DetailPanel, Sparkline, CheckInDialog, Timeline.
+- `src/styles/` — `tokens.css` (paleta NASA), `base.css`, `layout.css` (responsive), `components.css`. Sin estilos inline.
 - `public/models/` — `atlas.json` + 15 chunks `.bin.gz` (~33 MB).
 
-## Controlar la escena
-Cambia `state` en `App.tsx`:
-`explode` (0–1), `visible` (sistemas), `selected` (ids), `isolate`, `view` (`front|back|side|three-quarter`), `rotate`, `reset` (incrementar para recentrar).
+Datos simulados con fines de demostración. No es un dispositivo médico.

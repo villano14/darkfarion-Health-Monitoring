@@ -408,6 +408,12 @@
 .mood-option input:focus-visible + span { outline: 2px solid var(--primary); outline-offset: 2px; }
 
 @media (max-width: 760px) {
+  .metrics { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .metric { padding: 12px; }
+  .metric-value strong { font-size: 20px; }
+  .spark, .spark-empty { height: 28px; }
+  .legend { display: none; }
+
   .topbar { gap: 10px; }
   .brand span { display: none; }
   .mission-day .muted { display: none; }
