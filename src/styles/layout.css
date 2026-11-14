@@ -1,0 +1,74 @@
+/* App shell: top bar · systems | stage | detail · timeline */
+.app {
+  height: 100dvh;
+  display: grid;
+  grid-template-columns: var(--side-w) minmax(0, 1fr) var(--detail-w);
+  grid-template-rows: var(--top-h) minmax(0, 1fr) var(--time-h);
+  grid-template-areas:
+    'top top top'
+    'sys stage detail'
+    'time time time';
+}
+
+.topbar { grid-area: top; }
+.systems { grid-area: sys; }
+.stage { grid-area: stage; }
+.detail { grid-area: detail; }
+.timeline { grid-area: time; }
+
+.stage {
+  position: relative;
+  min-height: 0;
+  background: radial-gradient(ellipse at 50% 40%, #ffffff 0%, var(--bg) 70%);
+}
+
+.scene { position: absolute; inset: 0; }
+.scene canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+.scene canvas:active { cursor: grabbing; }
+
+.systems,
+.detail {
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--gap);
+  background: var(--surface);
+}
+.systems { border-right: 1px solid var(--line); }
+.detail { border-left: 1px solid var(--line); }
+
+/* Mobile: stacked, detail becomes a bottom sheet */
+@media (max-width: 760px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: var(--top-h) auto minmax(0, 1fr) var(--time-h);
+    grid-template-areas: 'top' 'sys' 'stage' 'time';
+  }
+
+  .systems {
+    display: flex;
+    gap: 8px;
+    padding: 8px var(--gap);
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    scrollbar-width: none;
+  }
+  .systems::-webkit-scrollbar { display: none; }
+
+  .detail {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--time-h) + env(safe-area-inset-bottom));
+    max-height: 55dvh;
+    z-index: 20;
+    border: 0;
+    border-radius: var(--radius) var(--radius) 0 0;
+    box-shadow: 0 -8px 32px #0b142614;
+    transform: translateY(calc(100% + var(--time-h) + 20px));
+    transition: transform 0.28s ease;
+  }
+  .has-selection .detail { transform: none; }
+  .detail-overview { display: none; }
+}

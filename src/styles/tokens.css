@@ -1,0 +1,42 @@
+/* Design tokens — NASA blue as primary, NASA red reserved for alerts. */
+:root {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --ink: #0b1426;
+  --muted: #5b6676;
+  --line: #e3e6eb;
+
+  --primary: #0b3d91;
+  --primary-hover: #0a347c;
+  --primary-soft: #e7edf8;
+
+  --alert: #fc3d21;
+  --alert-ink: #c22a12;
+  --alert-soft: #ffece8;
+  --watch: #f2a900;
+  --watch-ink: #8a5f00;
+  --watch-soft: #fff6db;
+  --normal: #2e9e6b;
+  --normal-ink: #1f7a51;
+  --normal-soft: #e4f5ec;
+  --empty: #c9ced6;
+
+  --radius: 14px;
+  --radius-sm: 10px;
+  --shadow: 0 1px 2px #0b142608, 0 6px 24px #0b14260d;
+  --font: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --top-h: 60px;
+  --time-h: 64px;
+  --side-w: 256px;
+  --detail-w: 340px;
+  --gap: 16px;
+}
+
+@media (max-width: 1100px) {
+  :root { --side-w: 216px; --detail-w: 300px; }
+}
+
+@media (max-width: 760px) {
+  :root { --top-h: 56px; --time-h: 60px; --gap: 12px; }
+}
