@@ -1822,6 +1822,114 @@ progress::-moz-progress-bar { background: currentColor; }
 .impact-list li { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-4) 0; border-top: 1px solid var(--line); font-size: 17px; }
 .impact-list li:last-child { border-bottom: 1px solid var(--line); }
 
+/* ── Team ── */
+.team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--s-6); margin-top: var(--s-4); }
+.team-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-6) var(--s-5);
+  border-radius: var(--r-lg);
+  background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+  transition: transform var(--m-in) var(--ease),
+              border-color var(--m-in) var(--ease),
+              box-shadow var(--m-in) var(--ease),
+              background var(--m-in) var(--ease);
+}
+.team-card:hover {
+  transform: translateY(-6px);
+  border-color: var(--primary-line);
+  box-shadow: 0 16px 36px #00000070, 0 0 24px -4px var(--primary-soft);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 80%, var(--primary-fill)) 0%, var(--surface) 100%);
+}
+.team-avatar {
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 2px solid var(--line-strong);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px #00000050;
+  transition: transform 0.3s var(--ease),
+              border-color 0.3s var(--ease),
+              box-shadow 0.3s var(--ease);
+}
+.team-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s var(--ease);
+}
+.team-card:hover .team-avatar {
+  transform: scale(1.05);
+  border-color: var(--primary);
+  box-shadow: 0 0 20px var(--primary-soft), 0 8px 24px #00000060;
+}
+.team-card:hover .team-avatar img {
+  transform: scale(1.08);
+}
+.team-card h3 {
+  font-family: var(--font-name);
+  font-style: italic;
+  font-size: 20px;
+  line-height: 1.25;
+  margin: 0;
+  color: var(--ink);
+  transition: color 0.2s var(--ease);
+}
+.team-card:hover h3 {
+  color: #fff;
+}
+.team-role, .team-card p {
+  display: inline-block;
+  color: var(--primary);
+  background: var(--primary-soft);
+  border: 1px solid var(--primary-line);
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+.team-links { display: flex; gap: var(--s-3); margin-top: var(--s-2); }
+.team-links a {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  transition: transform 0.2s var(--ease),
+              border-color 0.2s var(--ease),
+              color 0.2s var(--ease),
+              background 0.2s var(--ease),
+              box-shadow 0.2s var(--ease);
+}
+.team-links a:hover {
+  background: var(--surface-2);
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px #00000060;
+}
+.team-links svg { width: 19px; height: 19px; }
+
 .landing-close { display: grid; justify-items: start; gap: var(--s-4); margin: var(--s-6) 0 var(--s-7); padding: var(--s-6); }
 .landing-close h2 { font-size: clamp(32px, 4vw, 48px); line-height: 1.05; }
 .landing-close p { max-width: 56ch; color: var(--ink-2); font-size: 17px; }

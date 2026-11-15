@@ -2,6 +2,25 @@ import {useState} from 'react';
 import {ArrowRight, Camera, ClipboardPen, Code, Eye, Siren} from 'lucide-react';
 import {useI18n, type Lang} from '../i18n';
 
+function GithubIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+      <path d="M9 18c-4.51 2-5-2-7-2" />
+    </svg>
+  );
+}
+
+function LinkedinIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+      <rect width="4" height="12" x="2" y="9" />
+      <circle cx="4" cy="4" r="2" />
+    </svg>
+  );
+}
+
 /** Opens the working app (sign-in first when there is no session). */
 const openApp = () => { location.hash = '/body'; };
 
@@ -9,7 +28,7 @@ type Shot = 'detail' | 'body' | 'vitals' | 'routine' | 'crew' | 'mobile';
 
 const COPY = {
   en: {
-    nav: {problem: 'Problem', how: 'How it works', screens: 'Screens', tech: 'Technology', impact: 'Impact'},
+    nav: {problem: 'Problem', how: 'How it works', screens: 'Screens', tech: 'Technology', impact: 'Impact', team: 'Team'},
     open: 'Open the app',
     heroTitle: 'Astronaut health, read like a star chart.',
     heroLead: 'Qhalikay helps astronauts on long-duration missions check their own health every day, see which body system needs care, and know who should act: themselves, the crew, or the flight surgeon on Earth.',
@@ -75,12 +94,18 @@ const COPY = {
       'Autonomy for missions with long communication delays.',
       'Health literacy: each measurement explained, never just a number.',
     ],
+    teamTitle: 'Our Team',
+    team: [
+      {name: 'Juan Salomon Villano Castro', role: 'Fullstack Developer', photo: '/juan.jpeg', github: 'https://github.com/villano14', linkedin: 'https://www.linkedin.com/in/jsvillano?trk=contact-info'},
+      {name: 'Rodrigo Riveros Mitma', role: 'Fullstack Developer & QA', photo: '/rodri.jpeg', github: 'https://github.com/Nate2658', linkedin: 'https://www.linkedin.com/in/rodrigo-riveros-mitma-8290a0384/'},
+      {name: 'Jacob Aldo Chipana Delgado', role: 'Mobile Developer', photo: '/jacob.jpeg', github: 'https://github.com/jacobaldodev', linkedin: 'https://www.linkedin.com/in/jacobaldochipanadelgado/'},
+    ],
     closeTitle: 'Open the mission',
     closeBody: 'Enter with a demo crew member and explore the body, the check-in and the crew view.',
     disclaimer: 'Educational prototype, not a medical device. Thresholds are reference values; daily vitals in the demo are synthetic. Not affiliated with or endorsed by NASA.',
   },
   es: {
-    nav: {problem: 'Problemática', how: 'Funcionamiento', screens: 'Capturas', tech: 'Tecnologías', impact: 'Impacto'},
+    nav: {problem: 'Problemática', how: 'Funcionamiento', screens: 'Capturas', tech: 'Tecnologías', impact: 'Impacto', team: 'Equipo'},
     open: 'Abrir la app',
     heroTitle: 'La salud del astronauta, leída como una carta celeste.',
     heroLead: 'Qhalikay ayuda a los astronautas de misiones largas a revisar su salud cada día, ver qué sistema del cuerpo necesita atención y saber quién debe actuar: ellos mismos, la tripulación o el médico de vuelo en Tierra.',
@@ -145,6 +170,12 @@ const COPY = {
       'Las mismas reglas de escalado para todos, del autocuidado al médico de vuelo.',
       'Autonomía para misiones con grandes retrasos de comunicación.',
       'Educación en salud: cada medición explicada, nunca solo un número.',
+    ],
+    teamTitle: 'Nuestro Equipo',
+    team: [
+      {name: 'Juan Salomon Villano Castro', role: 'Desarrollador Fullstack', photo: '/juan.jpeg', github: 'https://github.com/villano14', linkedin: 'https://www.linkedin.com/in/jsvillano?trk=contact-info'},
+      {name: 'Rodrigo Riveros Mitma', role: 'Desarrollador Fullstack y QA', photo: '/rodri.jpeg', github: 'https://github.com/Nate2658', linkedin: 'https://www.linkedin.com/in/rodrigo-riveros-mitma-8290a0384/'},
+      {name: 'Jacob Aldo Chipana Delgado', role: 'Desarrollador Mobile', photo: '/jacob.jpeg', github: 'https://github.com/jacobaldodev', linkedin: 'https://www.linkedin.com/in/jacobaldochipanadelgado/'},
     ],
     closeTitle: 'Abre la misión',
     closeBody: 'Entra con un tripulante de demo y recorre el cuerpo, el registro diario y la vista de tripulación.',
@@ -286,6 +317,29 @@ export default function LandingPage() {
           <ul className="impact-list">
             {c.impact.map(item => <li key={item}><span className="mag" aria-hidden="true" />{item}</li>)}
           </ul>
+        </section>
+
+        <section id="team" className="landing-section">
+          <h2 className="name">{c.teamTitle}</h2>
+          <div className="team-grid">
+            {c.team.map(m => (
+              <article key={m.name} className="team-card">
+                <div className="team-avatar">
+                  {m.photo ? (
+                    <img src={m.photo} alt={m.name} width="128" height="128" loading="lazy" />
+                  ) : (
+                    m.name.split(' ').map(w => w[0]).slice(0, 2).join('')
+                  )}
+                </div>
+                <h3>{m.name}</h3>
+                <p className="team-role">{m.role}</p>
+                <div className="team-links">
+                  <a href={m.github} target="_blank" rel="noreferrer" aria-label={`${m.name} GitHub`}><GithubIcon /></a>
+                  <a href={m.linkedin} target="_blank" rel="noreferrer" aria-label={`${m.name} LinkedIn`}><LinkedinIcon /></a>
+                </div>
+              </article>
+            ))}
+          </div>
         </section>
 
         <section className="landing-close plate">
