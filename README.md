@@ -1,4 +1,4 @@
-# CrewHealth · Reto NASA
+# Qhalikay · Reto NASA
 
 Monitoreo de salud para misiones de larga duración: los astronautas registran sus indicadores, ven el estado de cada sistema del cuerpo en 3D y saben cuándo actuar solos, avisar a la tripulación o llamar al médico de vuelo.
 
@@ -68,7 +68,7 @@ El estado de cada sistema y el nivel de escalado (autocuidado → tripulación �
 2. En el servicio: **Settings → Root Directory = `/backend`** (usa `backend/Dockerfile` y `backend/railway.toml`).
 3. **+ New → Database → PostgreSQL**. En el servicio de la API agrega la variable `DATABASE_URL = ${{Postgres.DATABASE_URL}}`.
 4. Variables: `JWT_SECRET` (32+ caracteres al azar), `CORS_ORIGINS` (URL de Vercel, p. ej. `https://tu-app.vercel.app`), `SEED_DEMO=true`, `NASA_API_KEY`, `GROQ_API_KEY`.
-5. **Settings → Networking → Generate Domain**. Al desplegar, los logs muestran `migrations ready` y luego `CrewHealth API listening`.
+5. **Settings → Networking → Generate Domain**. Al desplegar, los logs muestran `migrations ready` y luego `Qhalikay API listening`.
 
 ### Frontend en Vercel
 - Variable `VITE_API_URL` = dominio de Railway (p. ej. `https://crewhealth-api.up.railway.app`) y redepliega.

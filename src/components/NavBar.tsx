@@ -36,11 +36,7 @@ export default function NavBar({route, canRecord, now, streak, vitalsDone, vital
   return (
     <header className="navbar">
       <a className="brand" href="#/body" aria-label={t('nav.home')}>
-        <svg className="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="5" />
-          <ellipse cx="12" cy="12" rx="10.5" ry="4" />
-        </svg>
-        <span className="brand-name">CrewHealth</span>
+        <img className="brand-logo" src="/logo-mark.webp" alt="Qhalikay" width="46" height="40" />
       </a>
 
       <nav className="nav-links" aria-label={t('nav.main')}>

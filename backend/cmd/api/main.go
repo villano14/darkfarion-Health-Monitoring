@@ -1,4 +1,4 @@
-// Command api runs the CrewHealth backend. On start it applies pending database migrations,
+// Command api runs the Qhalikay backend. On start it applies pending database migrations,
 // optionally seeds a demo mission, and then serves the REST API.
 //
 // Environment:
@@ -113,7 +113,7 @@ func run() error {
 		defer cancel()
 		_ = srv.Shutdown(shutdown)
 	}()
-	slog.Info("CrewHealth API listening", "addr", srv.Addr, "demo", demo)
+	slog.Info("Qhalikay API listening", "addr", srv.Addr, "demo", demo)
 	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}

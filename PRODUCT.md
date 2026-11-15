@@ -39,7 +39,7 @@ Help astronauts assess their own health during a mission and act on it: gather h
 ## Brand Commitments
 - Orbi, the mascot: its artwork and floating button stay exactly as they are.
 - NASA colors: NASA Blue #0B3D91 and NASA Red #FC3D21. The official NASA insignia ("meatball") and logotype are trademarks and must not be used.
-- The name "CrewHealth" is in use; the user did not mark it as binding.
+- The product name is "Qhalikay" (binding, set by the user). Internal identifiers (storage keys, token issuer, demo email domain) still say crewhealth.
 
 ## Evidence on Hand
 - NASA OSDR OSD-575 Inspiration4 comprehensive metabolic panel: `backend/scripts/inspiration4-cmp.json` (also in the database).

@@ -1,4 +1,4 @@
-# CrewHealth API. Migrations are embedded in the binary and run on start.
+# Qhalikay API. Migrations are embedded in the binary and run on start.
 FROM golang:1.26-alpine AS build
 WORKDIR /src
 COPY go.mod go.sum ./

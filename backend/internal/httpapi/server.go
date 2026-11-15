@@ -1,4 +1,4 @@
-// Package httpapi exposes the CrewHealth REST API.
+// Package httpapi exposes the Qhalikay REST API.
 package httpapi
 
 import (

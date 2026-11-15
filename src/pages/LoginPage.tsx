@@ -29,11 +29,7 @@ export default function LoginPage({config}: {config: AppConfig}) {
     <main className="login">
       <section className="login-card plate" aria-labelledby="login-title">
         <div className="login-brand">
-          <svg className="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="5" />
-            <ellipse cx="12" cy="12" rx="10.5" ry="4" />
-          </svg>
-          <span>CrewHealth</span>
+          <img className="login-logo" src="/logo-mark.webp" alt="Qhalikay" width="111" height="96" />
           <button type="button" className="link-btn login-lang" onClick={() => setLang(lang === 'es' ? 'en' : 'es')}>
             {lang === 'es' ? 'English' : 'Español'}
           </button>

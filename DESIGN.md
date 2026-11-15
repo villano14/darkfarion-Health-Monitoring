@@ -1,5 +1,5 @@
 ---
-name: CrewHealth
+name: Qhalikay
 description: An astronaut's daily health check, read like a star atlas plate on a night-sky ground.
 colors:
   night-sky: "#0a1021"
@@ -147,13 +147,13 @@ components:
     backgroundColor: "{colors.deep-indigo}"
 ---
 
-# Design System: CrewHealth
+# Design System: Qhalikay
 
 ## Overview
 
 **Creative North Star: "The Star Atlas Plate"**
 
-CrewHealth reads like a plate from a celestial atlas. The astronaut's body is the chart; the seven body systems are objects on it, ranked by magnitude, and the one that needs care sits under a night-vision red reticle with its name written beside it in italic, the way a constellation is named on a printed chart. Everything else on screen serves as the plate's apparatus: an object index, a key, a scale along the bottom edge, a title strip on top. The ground is the night sky made from NASA Blue darkened almost to black, because the user checks in under the dimmed light cycle of a module, often on a phone, one-handed.
+Qhalikay reads like a plate from a celestial atlas. The astronaut's body is the chart; the seven body systems are objects on it, ranked by magnitude, and the one that needs care sits under a night-vision red reticle with its name written beside it in italic, the way a constellation is named on a printed chart. Everything else on screen serves as the plate's apparatus: an object index, a key, a scale along the bottom edge, a title strip on top. The ground is the night sky made from NASA Blue darkened almost to black, because the user checks in under the dimmed light cycle of a module, often on a phone, one-handed.
 
 The density is that of a working chart: hairline frames, tabular figures, small tracked capitals for region names, generous empty sky around the body. Color is scarce and semantic. NASA Red is the star red and means alert, selection, or "you are here"; glow amber means watch; a pale chart blue means in range and also carries links and focus. Severity is never color alone: it is drawn as dot diameter on a fixed ramp and always paired with a word.
 

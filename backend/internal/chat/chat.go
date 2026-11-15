@@ -19,7 +19,7 @@ const (
 )
 
 // System is Orbi's fixed system prompt. Per-request health data goes in the user turn, never here.
-const System = `You are Orbi, the friendly health companion inside CrewHealth, an app that helps astronauts on long-duration missions monitor their own health.
+const System = `You are Orbi, the friendly health companion inside Qhalikay, an app that helps astronauts on long-duration missions monitor their own health.
 
 What you do:
 - Explain the crew member's current readings and risks in plain words, using the <crew_health_context> they send.

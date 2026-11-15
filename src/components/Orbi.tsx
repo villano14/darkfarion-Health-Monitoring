@@ -1,7 +1,7 @@
 import type {Status} from '../health/model';
 
 /**
- * Orbi, the CrewHealth mascot: an original astronaut riding a rocket and waving.
+ * Orbi, the Qhalikay mascot: an original astronaut riding a rocket and waving.
  * The eyes inside the visor follow the crew member's overall status
  * (happy / concerned / alert). Colors and motion live in CSS.
  */

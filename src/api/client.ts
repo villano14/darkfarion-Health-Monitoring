@@ -1,5 +1,5 @@
 /**
- * CrewHealth API client. Every piece of data the app shows comes from the Go backend.
+ * Qhalikay API client. Every piece of data the app shows comes from the Go backend.
  * VITE_API_URL points to it in production (Railway); in development Vite proxies /api.
  */
 const BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');

@@ -417,7 +417,7 @@ func (s *Server) summary(ctx context.Context, userID int64, lang, envID string, 
 		}
 		b.WriteString(")\n\nBody systems (latest readings):\n")
 	} else {
-		fmt.Fprintf(&b, "CrewHealth %s · %s · %s (%s)\n", t("report", "reporte"), m.Name, u.Name, title)
+		fmt.Fprintf(&b, "Qhalikay %s · %s · %s (%s)\n", t("report", "reporte"), m.Name, u.Name, title)
 		fmt.Fprintf(&b, "%s %d · %s (%s, %s %s)\n", t("Mission day", "Día de misión"), m.Day, env.Name[lang], env.Gravity, t("signal delay", "retraso de señal"), env.Delay)
 		fmt.Fprintf(&b, "%s %s UTC\n\n", t("Generated", "Generado"), time.Now().UTC().Format("2006-01-02 15:04"))
 	}
