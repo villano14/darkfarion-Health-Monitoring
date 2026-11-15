@@ -1391,6 +1391,15 @@ progress::-moz-progress-bar { background: currentColor; border-radius: var(--r-p
 .pulse-head h2 { display: flex; align-items: center; gap: var(--s-2); font-size: var(--t-read); }
 .pulse-head .icon-btn { color: #ffffffcc; }
 .pulse-body { display: grid; justify-items: center; gap: var(--s-4); padding: var(--s-5); }
+.pulse-ring { position: relative; display: grid; place-items: center; width: 180px; height: 180px; }
+.pulse-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; rotate: -90deg; }
+.pulse-ring circle { fill: none; stroke-width: 8; }
+.pulse-track { stroke: var(--line-strong); transition: stroke var(--m-slide) var(--ease); }
+.pulse-progress { stroke: var(--normal); stroke-linecap: round; transition: stroke-dashoffset 120ms linear; }
+.pulse-ring.is-searching .pulse-track { stroke: var(--watch); animation: searching 1.4s ease-in-out infinite; }
+.pulse-ring.is-covered .pulse-track,
+.pulse-ring.is-done .pulse-track { stroke: var(--normal-soft); }
+@keyframes searching { 50% { opacity: 0.35; } }
 .pulse-lens {
   position: relative;
   display: grid;
@@ -1400,16 +1409,23 @@ progress::-moz-progress-bar { background: currentColor; border-radius: var(--r-p
   border-radius: 50%;
   overflow: hidden;
   background: var(--bg-sunken);
-  box-shadow: 0 0 0 4px var(--line);
+  box-shadow: 0 0 0 3px var(--line);
   transition: box-shadow var(--m-slide) var(--ease);
 }
-.pulse-lens.is-covered { box-shadow: 0 0 0 4px var(--alert); animation: beat 1s ease-in-out infinite; }
+.pulse-ring.is-covered .pulse-lens { box-shadow: 0 0 0 3px var(--normal); animation: beat 1s ease-in-out infinite; }
+.pulse-ring.is-done .pulse-lens { box-shadow: 0 0 0 3px var(--normal); }
 @keyframes beat { 0%, 100% { scale: 1; } 15% { scale: 1.04; } }
 .pulse-lens video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.pulse-bpm { position: relative; display: grid; place-items: center; width: 100%; height: 100%; background: #ffffffe6; font-size: 40px; font-weight: 750; line-height: 1; color: var(--alert-ink); }
+.pulse-count,
+.pulse-bpm { position: relative; display: grid; place-items: center; align-content: center; width: 100%; height: 100%; font-size: 48px; font-weight: 750; line-height: 1; font-variant-numeric: tabular-nums; }
+.pulse-count { background: #0b142633; color: #fff; text-shadow: 0 1px 6px #0006; }
+.pulse-count span { font-size: var(--t-read); font-weight: 600; }
+.pulse-bpm { background: #ffffffe6; font-size: 40px; color: var(--alert-ink); }
 .pulse-bpm span { font-size: var(--t-label); font-weight: 600; color: var(--muted); }
 .pulse-wave { width: 100%; height: 60px; color: var(--alert); }
-.pulse-status { text-align: center; color: var(--ink-2); min-height: 44px; }
+.pulse-status { display: grid; gap: var(--s-2); justify-items: center; text-align: center; color: var(--ink-2); min-height: 44px; }
+.pulse-status.is-ok { color: var(--normal-ink); font-weight: 600; }
+.pulse-duration { padding: 2px var(--s-3); border-radius: var(--r-pill); background: var(--primary-soft); color: var(--primary); font-size: var(--t-label); font-weight: 600; }
 .pulse-foot { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-5) var(--s-4); border-top: 1px solid var(--line); }
 .pulse-foot small { flex: 1; font-size: 12px; }
 

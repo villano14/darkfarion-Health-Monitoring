@@ -12,6 +12,53 @@ type Phase = 'idle' | 'measuring' | 'done' | 'failed' | 'denied';
 interface Sample {t: number; v: number}
 
 const DURATION_MS = 20000;
+/** The fingertip must stay on the lens this long before the countdown starts. */
+const SETTLE_MS = 600;
+/** A short slip of the finger is tolerated; longer than this restarts the count. */
+const GRACE_MS = 800;
+const SECONDS = DURATION_MS / 1000;
+const RING_R = 84, RING_C = 2 * Math.PI * RING_R;
+
+/** Fingertip over a lit lens: the frame is bright and strongly red. */
+function isCovered(r: number, g: number, b: number) {
+  return r > 60 && r > g * 1.6 && r > b * 1.6;
+}
+const SIZE = {width: {ideal: 320}, height: {ideal: 240}};
+const hasTorch = (m: MediaStream) =>
+  Boolean((m.getVideoTracks()[0]?.getCapabilities?.() as {torch?: boolean} | undefined)?.torch);
+const REAR = /back|rear|environment|trasera|posterior/i;
+
+/**
+ * Opens the phone's rear camera, preferring the lens next to the flash.
+ * Phones with several rear lenses (wide, ultra-wide, tele) may hand back one without a torch,
+ * so we try the other rear lenses until one can light the fingertip.
+ * Computers without a rear camera fall back to whatever camera exists.
+ */
+async function openRearCamera(): Promise<MediaStream> {
+  const md = navigator.mediaDevices;
+  let media: MediaStream;
+  try {
+    media = await md.getUserMedia({video: {facingMode: {exact: 'environment'}, ...SIZE}, audio: false});
+  } catch (e) {
+    if ((e as DOMException).name === 'NotAllowedError') throw e;
+    return md.getUserMedia({video: SIZE, audio: false});
+  }
+  if (hasTorch(media)) return media;
+  // Labels are only filled in once permission is granted, so list devices now.
+  const current = media.getVideoTracks()[0]?.getSettings().deviceId;
+  const rear = (await md.enumerateDevices())
+    .filter(d => d.kind === 'videoinput' && d.deviceId !== current && REAR.test(d.label));
+  for (const d of rear) {
+    try {
+      const other = await md.getUserMedia({video: {deviceId: {exact: d.deviceId}, ...SIZE}, audio: false});
+      if (hasTorch(other)) { media.getTracks().forEach(t => t.stop()); return other; }
+      other.getTracks().forEach(t => t.stop());
+    } catch { /* lens busy or unavailable: try the next one */ }
+  }
+  return media;
+}
+
+const buzz = (ms: number | number[]) => { try { navigator.vibrate?.(ms); } catch { /* not supported */ } };
 
 /**
  * Heart rate from the camera (photoplethysmography): with a fingertip over the lens,
@@ -70,7 +117,8 @@ export default function CameraPulse({open, onClose, onResult}: Props) {
   const frame = useRef(0);
   const [phase, setPhase] = useState<Phase>('idle');
   const [finger, setFinger] = useState(false);
-  const [left, setLeft] = useState(DURATION_MS / 1000);
+  const [left, setLeft] = useState(SECONDS);
+  const [progress, setProgress] = useState(0);
   const [bpm, setBpm] = useState<number | null>(null);
 
   const stop = useCallback(() => {
@@ -79,24 +127,24 @@ export default function CameraPulse({open, onClose, onResult}: Props) {
     stream.current = null;
   }, []);
 
+  const reset = () => { setFinger(false); setLeft(SECONDS); setProgress(0); };
+
   useEffect(() => {
     const d = dialog.current!;
-    if (open && !d.open) { setPhase('idle'); setBpm(null); d.showModal(); }
+    if (open && !d.open) { setPhase('idle'); setBpm(null); reset(); d.showModal(); }
     if (!open && d.open) d.close();
     if (!open) stop();
   }, [open, stop]);
   useEffect(() => stop, [stop]);
 
   const start = async () => {
+    reset();
     try {
-      const media = await navigator.mediaDevices.getUserMedia({
-        video: {facingMode: 'environment', width: {ideal: 320}, height: {ideal: 240}},
-        audio: false,
-      });
+      const media = await openRearCamera();
       stream.current = media;
-      // Turn the flash on where the device allows it (phones); harmless elsewhere.
-      const track = media.getVideoTracks()[0];
-      track.applyConstraints({advanced: [{torch: true} as MediaTrackConstraintSet]}).catch(() => {});
+      // Turn the flash on where the device allows it (Android); iPhone browsers ignore it.
+      media.getVideoTracks()[0]
+        .applyConstraints({advanced: [{torch: true} as MediaTrackConstraintSet]}).catch(() => {});
       const v = video.current!;
       v.srcObject = media;
       await v.play();
@@ -110,32 +158,55 @@ export default function CameraPulse({open, onClose, onResult}: Props) {
     sampler.width = 32;
     sampler.height = 24;
     const ctx = sampler.getContext('2d', {willReadFrequently: true})!;
-    let samples: Sample[] = [], startedAt = 0;
+    let samples: Sample[] = [];
+    let seenSince = 0;   // when the finger was first seen in the current streak
+    let lostSince = 0;   // when the finger was last lost (0 while it is on the lens)
+    let countedMs = 0;   // time accumulated toward DURATION_MS
+    let last = 0;
+    let detected = false;
 
     const tick = () => {
       const v = video.current;
       if (!v || !stream.current) return;
       ctx.drawImage(v, 0, 0, sampler.width, sampler.height);
       const px = ctx.getImageData(0, 0, sampler.width, sampler.height).data;
-      let r = 0, g = 0;
-      for (let i = 0; i < px.length; i += 4) { r += px[i]; g += px[i + 1]; }
+      let r = 0, g = 0, b = 0;
+      for (let i = 0; i < px.length; i += 4) { r += px[i]; g += px[i + 1]; b += px[i + 2]; }
       const n = px.length / 4;
-      r /= n; g /= n;
-      const covered = r > 60 && r > g * 1.6;
-      setFinger(covered);
+      r /= n; g /= n; b /= n;
       const now = performance.now();
-      if (!covered) { samples = []; startedAt = 0; setLeft(DURATION_MS / 1000); }
-      else {
-        if (!startedAt) startedAt = now;
-        samples.push({t: now, v: r});
-        setLeft(Math.max(0, Math.ceil((DURATION_MS - (now - startedAt)) / 1000)));
-        drawWave(samples.filter(s => now - s.t < 5000));
-        if (now - startedAt >= DURATION_MS) {
-          const result = estimateBpm(samples);
-          stop();
-          setBpm(result);
-          setPhase(result ? 'done' : 'failed');
-          return;
+      const dt = last ? Math.min(100, now - last) : 0;
+      last = now;
+
+      if (isCovered(r, g, b)) {
+        lostSince = 0;
+        if (!seenSince) seenSince = now;
+        if (!detected && now - seenSince >= SETTLE_MS) { detected = true; setFinger(true); buzz(40); }
+        if (detected) {
+          countedMs += dt;
+          samples.push({t: now, v: r});
+          setLeft(Math.max(0, Math.ceil((DURATION_MS - countedMs) / 1000)));
+          setProgress(Math.min(1, countedMs / DURATION_MS));
+          drawWave(samples.filter(s => now - s.t < 5000));
+          if (countedMs >= DURATION_MS) {
+            const result = estimateBpm(samples);
+            stop();
+            buzz(result ? [60, 80, 60] : 200);
+            setBpm(result);
+            setPhase(result ? 'done' : 'failed');
+            return;
+          }
+        }
+      } else {
+        seenSince = 0;
+        if (!lostSince) lostSince = now;
+        // Finger slipped for too long: start over so the reading stays clean.
+        if (detected && now - lostSince > GRACE_MS) {
+          detected = false;
+          samples = [];
+          countedMs = 0;
+          reset();
+          wave.current?.getContext('2d')?.clearRect(0, 0, wave.current.width, wave.current.height);
         }
       }
       frame.current = requestAnimationFrame(tick);
@@ -163,6 +234,8 @@ export default function CameraPulse({open, onClose, onResult}: Props) {
   };
 
   const close = () => { stop(); onClose(); };
+  const measuring = phase === 'measuring';
+  const lensState = phase === 'done' ? ' is-done' : measuring && finger ? ' is-covered' : measuring ? ' is-searching' : '';
 
   return (
     <dialog ref={dialog} className="pulse-dialog" onClose={close} aria-labelledby="pulse-title">
@@ -171,14 +244,25 @@ export default function CameraPulse({open, onClose, onResult}: Props) {
         <button type="button" className="icon-btn" onClick={close} aria-label={t('pulse.close')}><X aria-hidden="true" /></button>
       </header>
       <div className="pulse-body">
-        <div className={`pulse-lens${finger ? ' is-covered' : ''}`}>
-          <video ref={video} muted playsInline />
-          {phase === 'done' && <strong className="pulse-bpm">{bpm}<span>bpm</span></strong>}
+        <div className={`pulse-ring${lensState}`}>
+          <svg viewBox="0 0 180 180" aria-hidden="true">
+            <circle className="pulse-track" cx="90" cy="90" r={RING_R} />
+            <circle
+              className="pulse-progress" cx="90" cy="90" r={RING_R}
+              strokeDasharray={RING_C} strokeDashoffset={RING_C * (1 - (phase === 'done' ? 1 : progress))}
+            />
+          </svg>
+          <div className="pulse-lens">
+            <video ref={video} muted playsInline />
+            {measuring && finger && <strong className="pulse-count">{left}<span>s</span></strong>}
+            {phase === 'done' && <strong className="pulse-bpm">{bpm}<span>bpm</span></strong>}
+          </div>
         </div>
         <canvas ref={wave} className="pulse-wave" width="560" height="120" aria-hidden="true" />
-        <p className="pulse-status" role="status">
-          {phase === 'idle' && t('pulse.instructions')}
-          {phase === 'measuring' && (finger ? t('pulse.measuring', {s: left}) : t('pulse.noFinger'))}
+        <p className={`pulse-status${measuring && finger ? ' is-ok' : ''}`} role="status">
+          {phase === 'idle' && <>{t('pulse.instructions')}<span className="pulse-duration">{t('pulse.duration', {s: SECONDS})}</span></>}
+          {measuring && (finger ? t('pulse.detected', {s: left}) : t('pulse.noFinger'))}
+          {phase === 'done' && t('pulse.done')}
           {phase === 'failed' && t('pulse.failed')}
           {phase === 'denied' && t('pulse.denied')}
         </p>
