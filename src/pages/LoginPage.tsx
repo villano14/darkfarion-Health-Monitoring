@@ -1,15 +1,16 @@
-import {useState, type FormEvent} from 'react';
-import {LogIn} from 'lucide-react';
+import {useRef, useState, type FormEvent} from 'react';
+import {FlaskConical, LogIn, X} from 'lucide-react';
 import {api, ApiError, setToken, type AppConfig, type DemoAccount} from '../api/client';
 import {useI18n} from '../i18n';
 
-/** Sign-in. In demo mode it lists the seeded crew so judges can enter with one tap. */
+/** Sign-in. In demo mode a floating window lists the seeded crew so judges can enter with one tap. */
 export default function LoginPage({config}: {config: AppConfig}) {
   const {t, lang, setLang} = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const demoDialog = useRef<HTMLDialogElement>(null);
 
   const signIn = async (e: string, p: string) => {
     setBusy(true);
@@ -30,6 +31,7 @@ export default function LoginPage({config}: {config: AppConfig}) {
       <section className="login-card plate" aria-labelledby="login-title">
         <div className="login-brand">
           <img className="login-logo" src="/logo-mark.webp" alt="Qhalikay" width="111" height="96" />
+          <a className="link-btn login-about" href="#/home">{t('login.about')}</a>
           <button type="button" className="link-btn login-lang" onClick={() => setLang(lang === 'es' ? 'en' : 'es')}>
             {lang === 'es' ? 'English' : 'Español'}
           </button>
@@ -53,20 +55,30 @@ export default function LoginPage({config}: {config: AppConfig}) {
         </form>
 
         {config.demo && config.demoAccounts && (
-          <div className="login-demo">
-            <h2 className="label">{t('login.demo')}</h2>
-            <p className="muted">{t('login.demoSub', {p: config.demoAccounts[0]?.password ?? ''})}</p>
-            <ul>
-              {config.demoAccounts.map(a => (
-                <li key={a.email}>
-                  <button type="button" onClick={() => demo(a)} disabled={busy}>
-                    <strong>{a.name}</strong>
-                    <span className={`role-chip role-${a.role}`}>{t(`role.${a.role}`)}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <>
+            <button type="button" className="btn btn-secondary login-demo-open" onClick={() => demoDialog.current?.showModal()}>
+              <FlaskConical aria-hidden="true" />{t('login.demoOpen')}
+            </button>
+            <dialog ref={demoDialog} className="demo-dialog" aria-labelledby="demo-title" onClick={e => { if (e.target === e.currentTarget) e.currentTarget.close(); }}>
+              <div className="demo-dialog-body">
+                <header className="demo-dialog-head">
+                  <h2 id="demo-title" className="name">{t('login.demo')}</h2>
+                  <button type="button" className="icon-btn" onClick={() => demoDialog.current?.close()} aria-label={t('login.close')}><X aria-hidden="true" /></button>
+                </header>
+                <p className="muted">{t('login.demoSub', {p: config.demoAccounts[0]?.password ?? ''})}</p>
+                <ul className="login-demo">
+                  {config.demoAccounts.map(a => (
+                    <li key={a.email}>
+                      <button type="button" onClick={() => { demoDialog.current?.close(); demo(a); }} disabled={busy}>
+                        <strong>{a.name}</strong>
+                        <span className={`role-chip role-${a.role}`}>{t(`role.${a.role}`)}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </dialog>
+          </>
         )}
       </section>
     </main>

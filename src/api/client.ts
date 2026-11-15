@@ -2,7 +2,13 @@
  * Qhalikay API client. Every piece of data the app shows comes from the Go backend.
  * VITE_API_URL points to it in production (Railway); in development Vite proxies /api.
  */
-const BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
+/** Accepts the Railway domain with or without https:// and with or without a trailing slash. */
+function apiBase(raw: string | undefined): string {
+  const url = (raw ?? '').trim().replace(/\/+$/, '');
+  if (!url) return '';
+  return /^https?:\/\//.test(url) ? url : `https://${url}`;
+}
+const BASE = apiBase(import.meta.env.VITE_API_URL);
 const TOKEN_KEY = 'crewhealth.token';
 
 export type Role = 'astronaut' | 'crew_medical_officer' | 'flight_surgeon' | 'admin';

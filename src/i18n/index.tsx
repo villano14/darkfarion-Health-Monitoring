@@ -48,6 +48,9 @@ const UI = {
     'login.busy': 'Signing in…',
     'login.invalid': 'Wrong email or password.',
     'login.demo': 'Demo crew',
+    'login.demoOpen': 'Demo sessions',
+    'login.about': 'About Qhalikay',
+    'login.close': 'Close',
     'login.demoSub': 'Tap a person to enter with their role. Password: {p}',
     'role.astronaut': 'Astronaut',
     'role.crew_medical_officer': 'Crew medical officer',
@@ -282,6 +285,9 @@ const UI = {
     'login.busy': 'Entrando…',
     'login.invalid': 'Correo o contraseña incorrectos.',
     'login.demo': 'Tripulación de demo',
+    'login.demoOpen': 'Sesiones de prueba',
+    'login.about': 'Sobre Qhalikay',
+    'login.close': 'Cerrar',
     'login.demoSub': 'Toca a una persona para entrar con su rol. Contraseña: {p}',
     'role.astronaut': 'Astronauta',
     'role.crew_medical_officer': 'Oficial médico de la tripulación',
@@ -500,7 +506,8 @@ function initialLang(): Lang {
     const saved = localStorage.getItem(STORAGE);
     if (saved === 'en' || saved === 'es') return saved;
   } catch { /* storage unavailable */ }
-  return navigator.language?.startsWith('es') ? 'es' : 'en';
+  // English by default; Spanish when the visitor chose it.
+  return 'en';
 }
 
 export function I18nProvider({children}: {children: ReactNode}) {
