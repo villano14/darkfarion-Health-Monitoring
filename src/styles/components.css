@@ -1478,24 +1478,50 @@ progress::-moz-progress-bar { background: currentColor; }
 .session-spinner { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line-strong); border-top-color: var(--alert); animation: spin 900ms linear infinite; }
 @keyframes spin { to { rotate: 360deg; } }
 
-/* Sign-in: a single plate on the night ground */
+/* Sign-in: the picture owns the left half at full height; one calm column on the right holds
+   the brand, the welcome and the form, aligned to a single left edge. */
 .login {
   display: grid;
-  justify-items: center;
-  align-content: safe center;
+  grid-template-columns: minmax(0, 52fr) minmax(0, 48fr);
   height: 100dvh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: var(--s-6) var(--s-4);
   background: var(--bg);
 }
-.login-card { display: grid; gap: var(--s-5); width: min(460px, 100%); padding: var(--s-6) var(--s-5) var(--s-5); }
-.login-brand { display: flex; align-items: flex-start; gap: var(--s-2); }
-.login-logo { display: block; width: auto; height: 96px; }
-.login-about { margin-left: auto; font-size: var(--t-label); }
-.login-lang { font-size: var(--t-label); margin-left: var(--s-4); }
-.login h1 { font-family: var(--font-name); font-style: italic; font-size: var(--t-display); font-weight: 500; line-height: 1.05; letter-spacing: -0.01em; }
-.login-card > .muted { margin-top: calc(var(--s-4) * -1); }
+.login-art { position: relative; margin: 0; min-height: 0; overflow: hidden; }
+.login-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 42%; }
+/* The picture fades into the night ground where the form begins */
+.login-art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, #0a102100 70%, var(--bg) 100%); }
+.login-side { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.login-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); width: min(440px, 100%); margin: 0 auto; padding: var(--s-6) var(--s-4) 0; }
+.login-brand { display: flex; align-items: center; gap: var(--s-2); }
+.login-logo { display: block; width: auto; height: 44px; }
+.login-brand .name { font-size: 24px; }
+.login-links { display: flex; gap: var(--s-5); }
+.login-links .link-btn { min-height: 0; font-size: var(--t-label); color: var(--ink-2); }
+.login-body {
+  flex: 1;
+  display: grid;
+  align-content: center;
+  gap: var(--s-6);
+  width: min(440px, 100%);
+  margin: 0 auto;
+  padding: var(--s-6) var(--s-4) var(--s-7);
+}
+.login-welcome h1 { font-size: clamp(38px, 3.6vw, 52px); line-height: 1.04; letter-spacing: -0.015em; text-wrap: balance; }
+.login-welcome p { margin-top: var(--s-3); font-size: var(--t-read); line-height: 1.55; color: var(--ink-2); }
+.login-panel { display: grid; gap: var(--s-4); padding-top: var(--s-5); border-top: 1px solid var(--line); }
+.login-panel h2 { font-size: 26px; line-height: 1.1; }
+.login-submit { width: 100%; height: 48px; }
+.login-legal { font-size: var(--t-label); color: var(--muted); }
+@media (max-width: 860px) {
+  .login { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; height: 100dvh; overflow-y: auto; display: block; }
+  .login-art { height: 42vh; min-height: 260px; }
+  .login-art img { object-position: 50% 30%; }
+  .login-art::after { background: linear-gradient(180deg, #0a102100 55%, var(--bg) 100%); }
+  .login-side { overflow: visible; }
+  .login-top { position: absolute; top: 0; left: 0; right: 0; width: auto; padding: var(--s-3) var(--s-4); background: linear-gradient(180deg, #0a1021b3, #0a102100); }
+  .login-body { width: 100%; padding: var(--s-2) var(--s-4) var(--s-6); gap: var(--s-5); align-content: start; }
+  .login-welcome h1 { font-size: 34px; }
+}
 .login-form { display: grid; gap: var(--s-3); }
 .login-form label, .admin-form label { display: grid; gap: 6px; font-size: var(--t-micro); font-weight: 600; letter-spacing: var(--track-label); text-transform: uppercase; color: var(--muted); }
 .login-form input, .admin-form input, .admin-form select {
@@ -1503,7 +1529,7 @@ progress::-moz-progress-bar { background: currentColor; }
   padding: 0 var(--s-3);
   border: 1px solid var(--line-strong);
   border-radius: var(--r-sm);
-  background: var(--bg-sunken);
+  background: color-mix(in srgb, var(--bg-sunken) 82%, transparent);
   font-size: var(--t-body);
   letter-spacing: 0;
   text-transform: none;

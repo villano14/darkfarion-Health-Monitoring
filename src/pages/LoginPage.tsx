@@ -28,17 +28,32 @@ export default function LoginPage({config}: {config: AppConfig}) {
 
   return (
     <main className="login">
-      <section className="login-card plate" aria-labelledby="login-title">
-        <div className="login-brand">
-          <img className="login-logo" src="/logo-mark.webp" alt="Qhalikay" width="111" height="96" />
-          <a className="link-btn login-about" href="#/home">{t('login.about')}</a>
-          <button type="button" className="link-btn login-lang" onClick={() => setLang(lang === 'es' ? 'en' : 'es')}>
+      <figure className="login-art" aria-hidden="true">
+        <img src="/login-hero.webp" srcSet="/login-hero-720.webp 720w, /login-hero.webp 1200w" sizes="(max-width: 860px) 100vw, 52vw" alt="" />
+      </figure>
+
+      <div className="login-side">
+      <header className="login-top">
+        <span className="login-brand">
+          <img className="login-logo" src="/logo-mark.webp" alt="" width="55" height="48" />
+          <span className="name">Qhalikay</span>
+        </span>
+        <nav className="login-links">
+          <a className="link-btn" href="#/home">{t('login.about')}</a>
+          <button type="button" className="link-btn" onClick={() => setLang(lang === 'es' ? 'en' : 'es')}>
             {lang === 'es' ? 'English' : 'Español'}
           </button>
-        </div>
-        <h1 id="login-title">{t('login.title')}</h1>
-        <p className="muted">{t('login.sub')}</p>
+        </nav>
+      </header>
 
+      <div className="login-body">
+        <section className="login-welcome">
+          <h1 className="name">{t('login.welcome')}</h1>
+          <p>{t('login.welcomeText')}</p>
+        </section>
+
+      <section className="login-panel" aria-labelledby="login-title">
+        <h2 id="login-title" className="name">{t('login.title')}</h2>
         <form className="login-form" onSubmit={submit}>
           <label>
             <span>{t('login.email')}</span>
@@ -49,7 +64,7 @@ export default function LoginPage({config}: {config: AppConfig}) {
             <input type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} />
           </label>
           {error && <p className="login-error" role="alert">{error}</p>}
-          <button className="btn btn-primary" type="submit" disabled={busy}>
+          <button className="btn btn-primary login-submit" type="submit" disabled={busy}>
             <LogIn aria-hidden="true" />{busy ? t('login.busy') : t('login.submit')}
           </button>
         </form>
@@ -80,7 +95,11 @@ export default function LoginPage({config}: {config: AppConfig}) {
             </dialog>
           </>
         )}
+        <p className="login-legal">{t('login.legal')}</p>
       </section>
+      </div>
+
+      </div>
     </main>
   );
 }
