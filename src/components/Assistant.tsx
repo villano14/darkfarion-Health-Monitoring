@@ -1,4 +1,5 @@
 import {Fragment, useEffect, useRef, useState, type FormEvent, type ReactNode} from 'react';
+import {ApiError, request} from '../api/client';
 import {RotateCcw, SendHorizontal, X} from 'lucide-react';
 import type {GroupState} from '../health/data';
 import {GROUPS, type GroupId, type Status} from '../health/model';
@@ -9,8 +10,8 @@ interface Message {role: 'user' | 'assistant'; text: string; error?: boolean}
 
 interface Props {
   states: Record<GroupId, GroupState>;
-  /** Snapshot of readings and risks sent with each question. */
-  context: () => string;
+  /** Environment shown in the app; the server reads everything else from the database. */
+  environment: string;
 }
 
 const RANK: Record<Status, number> = {normal: 0, watch: 1, alert: 2};
@@ -32,7 +33,7 @@ function rich(text: string): ReactNode {
 }
 
 /** Orbi: floating mascot that answers questions about risks, prevention, and kit medicines. */
-export default function Assistant({states, context}: Props) {
+export default function Assistant({states, environment}: Props) {
   const L = useI18n(), {t, lang} = L;
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -65,13 +66,16 @@ export default function Assistant({states, context}: Props) {
       setMessages(m => [...m.filter(x => !(x.role === 'assistant' && !x.text)), {role: 'assistant', text: t(ERRORS[code] ?? 'orbi.err.generic'), error: true}]);
 
     try {
-      const res = await fetch('/api/chat', {
+      // The server builds the health context from the database; only the conversation travels.
+      const res = await request('/api/chat', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({lang, context: context(), messages: history.map(m => ({role: m.role, content: m.text}))}),
+        body: JSON.stringify({lang, environment, messages: history.map(m => ({role: m.role, content: m.text}))}),
         signal: abort.current.signal,
+      }).catch((e: unknown) => {
+        fail(e instanceof ApiError && e.status < 500 && e.status !== 404 ? 'generic' : 'offline');
+        return null;
       });
-      if (!res.ok || !res.body) { fail(res.status === 404 || res.status >= 500 ? 'offline' : 'generic'); return; }
+      if (!res?.body) return;
 
       setMessages(m => [...m, {role: 'assistant', text: ''}]);
       const reader = res.body.getReader(), decoder = new TextDecoder();

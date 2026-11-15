@@ -1,14 +1,14 @@
 import {useCallback, useEffect, useState} from 'react';
 
-export type Route = 'body' | 'vitals' | 'routine';
-const ROUTES: Route[] = ['body', 'vitals', 'routine'];
+export type Route = 'body' | 'vitals' | 'routine' | 'crew' | 'admin';
+const ROUTES: Route[] = ['body', 'vitals', 'routine', 'crew', 'admin'];
 
 const parse = (): Route => {
   const r = location.hash.replace(/^#\/?/, '') as Route;
   return ROUTES.includes(r) ? r : 'body';
 };
 
-/** Minimal hash router: #/body, #/vitals, #/routine. Works on any static host. */
+/** Minimal hash router: #/body, #/vitals, #/routine, #/crew, #/admin. Works on any static host. */
 export function useRoute() {
   const [route, setRoute] = useState<Route>(parse);
   useEffect(() => {

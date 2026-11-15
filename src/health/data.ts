@@ -1,56 +1,12 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
+import {api, ApiError, type Catalog, type Progress, type ReadingRow} from '../api/client';
 import {
   DAILY, GROUPS, INDICATORS, TODAY, indicatorsOf, tierFor, worst,
-  type Environment, type GroupId, type IndicatorId, type Reading, type Status, type Tier,
+  type GroupId, type IndicatorId, type Reading, type Status, type Tier,
 } from './model';
 
 /** Readings per mission day. */
 export type Log = Record<number, Partial<Record<IndicatorId, Reading>>>;
-
-function rng(seed: number) {
-  return () => {
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296 - 0.5;
-  };
-}
-
-/**
- * Simulated mission history (demo data). Daily indicators run until yesterday so
- * today's check-in is still pending; onboard scans run until today.
- */
-export function simulate(env: Environment): Log {
-  const n = rng(42), log: Log = {};
-  let dose = 0;
-  for (let d = 1; d <= TODAY; d++) {
-    const t = d / TODAY, day: Log[number] = {};
-    if (d < TODAY) {
-      day.bp = [116 + 22 * t ** 3 + n() * 6, 74 + 14 * t ** 3 + n() * 4];
-      day.hr = [66 + 4 * Math.sin(d / 9) + n() * 6];
-      day.glucose = [90 + 5 * t + n() * 10];
-      day.temp = [36.8 + n() * 0.3];
-      day.water = [Math.round((2.6 + n() * 0.9) * 10) / 10];
-      day.sleep = [Math.round((7.1 - 0.8 * t + n() * 1.1) * 2) / 2];
-      day.mood = [Math.max(1, Math.min(5, Math.round(4.4 - 0.6 * t + n() * 1.4)))];
-    }
-    dose += env.dose * (1 + n() * 0.3);
-    day.radiation = [dose];
-    day.bone = [-0.8 * env.unloading * (d / 30) + n() * 0.15]; // with resistance exercise countermeasures
-    day.muscle = [-0.045 * env.unloading * d + n() * 0.4];
-    // Weekly blood panel: calcium drifts up as bone unloads (reference ranges from NASA OSDR OSD-575).
-    if (d % 7 === 3 || d === TODAY) {
-      day.calcium = [Math.round((9.3 + 0.7 * t * env.unloading + n() * 0.3) * 10) / 10];
-      day.creatinine = [Math.round((0.92 + 0.08 * t + n() * 0.1) * 100) / 100];
-    }
-    day.solar = [0];
-    log[d] = day;
-  }
-  // Anchor the last two days so the demo opens with a clear story.
-  log[TODAY - 2].bp = [141, 90];
-  Object.assign(log[TODAY - 1], {bp: [142, 91], hr: [74], glucose: [94], temp: [36.9], water: [2.3], sleep: [6.5], mood: [4]});
-  return log;
-}
 
 /** Latest reading at or before `day`. */
 export function latest(log: Log, id: IndicatorId, day: number): {value?: Reading; day?: number} {
@@ -102,42 +58,49 @@ export function groupStates(log: Log, day: number): Record<GroupId, GroupState> 
   })) as Record<GroupId, GroupState>;
 }
 
-// --- Persistence ---------------------------------------------------------------
+// --- Data from the backend -----------------------------------------------------------
 
-function read<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
+function toLog(rows: ReadingRow[]): Log {
+  const log: Log = {};
+  for (const r of rows) (log[r.day] ??= {})[r.indicator as IndicatorId] = r.value;
+  return log;
 }
-function usePersistent<T>(key: string, fallback: T) {
-  const [value, setValue] = useState<T>(() => read(key, fallback));
+
+/**
+ * A crew member's mission history from the API. `subject` is a user id (crew medical officer and
+ * flight surgeon can open someone else's); undefined means the signed-in user.
+ * `solarToday` overlays the solar storm demo switch on today's live NASA DONKI reading.
+ */
+export function useHealthLog(subject: number | undefined, solarOverride: number | null = null) {
+  const [rows, setRows] = useState<ReadingRow[] | null>(null);
+  const [error, setError] = useState('');
+  const [version, setVersion] = useState(0);
+
   useEffect(() => {
-    try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* storage unavailable */ }
-  }, [key, value]);
-  return [value, setValue] as const;
-}
+    let live = true;
+    setError('');
+    api.readings(subject)
+      .then(r => { if (live) setRows(r.readings); })
+      .catch(e => { if (live) setError(e instanceof ApiError ? e.code : 'network'); });
+    return () => { live = false; };
+  }, [subject, version]);
 
-/** Simulated history merged with the astronaut's own entries (kept in this browser). */
-export function useHealthLog(env: Environment, solarToday = 0) {
-  const [entries, setEntries] = usePersistent<Log>('crewhealth.entries.v1', {});
   const log = useMemo(() => {
-    const merged = simulate(env);
-    for (const [d, values] of Object.entries(entries)) merged[+d] = {...merged[+d], ...values};
-    // Solar particle events come from the live NASA DONKI feed (or the demo switch).
-    merged[TODAY] = {...merged[TODAY], solar: [solarToday]};
+    const merged = toLog(rows ?? []);
+    if (solarOverride !== null) merged[TODAY] = {...merged[TODAY], solar: [solarOverride]};
     return merged;
-  }, [env, entries, solarToday]);
+  }, [rows, solarOverride]);
 
-  const record = useCallback((values: Partial<Record<IndicatorId, Reading>>) => {
-    setEntries(e => ({...e, [TODAY]: {...e[TODAY], ...values}}));
-  }, [setEntries]);
+  /** Saves today's readings; the server answers with the updated history. */
+  const record = useCallback(async (values: Partial<Record<IndicatorId, Reading>>, sources?: Partial<Record<IndicatorId, string>>) => {
+    const r = await api.record(values as Record<string, number[]>, sources as Record<string, string>);
+    setRows(r.readings);
+  }, []);
+  const reload = useCallback(() => setVersion(v => v + 1), []);
 
-  const today = useMemo(() => entries[TODAY] ?? {}, [entries]);
+  const today = useMemo(() => log[TODAY] ?? {}, [log]);
   const done = DAILY.filter(i => today[i.id]).length;
-  return {log, record, today, done, total: DAILY.length};
+  return {log, record, reload, today, done, total: DAILY.length, loaded: rows !== null, error};
 }
 
 // --- Daily routine -------------------------------------------------------------
@@ -147,32 +110,49 @@ export interface Task {
   time: string;
   label: string;
   kind: 'measure' | 'exercise';
+  points: number;
   indicators?: IndicatorId[];
 }
-export const ROUTINE: Task[] = [
-  {id: 'sleep', time: '07:00', label: 'Log sleep', kind: 'measure', indicators: ['sleep']},
-  {id: 'vitals', time: '07:30', label: 'Blood pressure and pulse', kind: 'measure', indicators: ['bp', 'hr']},
-  {id: 'glucose', time: '07:45', label: 'Fasting blood sugar', kind: 'measure', indicators: ['glucose']},
-  {id: 'ared', time: '10:00', label: 'Resistance training, 60 min', kind: 'exercise'},
-  {id: 'cycle', time: '15:00', label: 'Cycle ergometer, 30 min', kind: 'exercise'},
-  {id: 'temp', time: '19:00', label: 'Body temperature', kind: 'measure', indicators: ['temp']},
-  {id: 'water', time: '20:30', label: 'Log fluid intake', kind: 'measure', indicators: ['water']},
-  {id: 'mood', time: '21:00', label: 'Mood check-in', kind: 'measure', indicators: ['mood']},
-];
+/** Filled from the backend catalog. */
+export const ROUTINE: Task[] = [];
+export const ACHIEVEMENTS: Catalog['achievements'] = [];
+
 export type TaskState = 'done' | 'overdue' | 'due' | 'upcoming';
 const minutes = (hhmm: string) => +hhmm.slice(0, 2) * 60 + +hhmm.slice(3);
 
-export function useRoutine(today: Partial<Record<IndicatorId, Reading>>, now: Date) {
-  const [exercise, setExercise] = usePersistent<Record<string, boolean>>(`crewhealth.exercise.${TODAY}`, {});
+/** Today's routine with completion from the API; `refresh` re-reads it after new readings. */
+export function useRoutine(subject: number | undefined, now: Date, refresh: unknown) {
+  const [done, setDone] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    let live = true;
+    api.routine(subject)
+      .then(r => { if (live) setDone(Object.fromEntries(r.tasks.map(t => [t.id, t.done]))); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [subject, refresh]);
+
   const clock = now.getHours() * 60 + now.getMinutes();
   const tasks = ROUTINE.map(task => {
-    const done = task.kind === 'exercise' ? !!exercise[task.id] : task.indicators!.every(id => today[id]);
     const late = clock - minutes(task.time);
-    const state: TaskState = done ? 'done' : late > 60 ? 'overdue' : late >= 0 ? 'due' : 'upcoming';
+    const state: TaskState = done[task.id] ? 'done' : late > 60 ? 'overdue' : late >= 0 ? 'due' : 'upcoming';
     return {...task, state};
   });
-  const toggle = useCallback((id: string) => setExercise(e => ({...e, [id]: !e[id]})), [setExercise]);
+  const toggle = useCallback(async (id: string) => {
+    const r = await api.toggleTask(id);
+    setDone(Object.fromEntries(r.tasks.map(t => [t.id, t.done])));
+  }, []);
   return {tasks, toggle, completed: tasks.filter(t => t.state === 'done').length};
+}
+
+/** Streak, points and achievements, computed by the server from real records. */
+export function useProgress(subject: number | undefined, refresh: unknown) {
+  const [progress, setProgress] = useState<Progress | null>(null);
+  useEffect(() => {
+    let live = true;
+    api.progress(subject).then(p => { if (live) setProgress(p); }).catch(() => {});
+    return () => { live = false; };
+  }, [subject, refresh]);
+  return progress;
 }
 
 /** Re-renders every `ms` with the current time. */

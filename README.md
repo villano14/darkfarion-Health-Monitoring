@@ -1,42 +1,76 @@
-# Reto NASA · Atlas 3D
+# CrewHealth · Reto NASA
 
-Visor 3D de anatomía humana extraído de [human-atlas](https://github.com/ashemag/human-atlas) (MIT).
-Modelo: BodyParts3D 4.0, © DBCLS, **CC BY 4.0**. Mantén `public/ATTRIBUTION.md` si redistribuyes.
+Monitoreo de salud para misiones de larga duración: los astronautas registran sus indicadores, ven el estado de cada sistema del cuerpo en 3D y saben cuándo actuar solos, avisar a la tripulación o llamar al médico de vuelo.
+
+- **Frontend:** Vite + React + Three.js (`src/`), desplegado en Vercel.
+- **Backend:** Go + PostgreSQL (`backend/`), desplegado en Railway. Las **migraciones corren solas al iniciar la API**.
+- Modelo 3D: BodyParts3D 4.0, © DBCLS, **CC BY 4.0** (ver `public/ATTRIBUTION.md`). Visor basado en [human-atlas](https://github.com/ashemag/human-atlas) (MIT).
+
+## Desarrollo local
 
 ```sh
+# 1. Base de datos + API (Docker o Podman)
+cd backend && docker compose up          # API en http://localhost:8080, con misión de demo
+
+# o sin contenedor para la API:
+cd backend && cp .env.example .env       # ajusta DATABASE_URL
+go run ./cmd/api
+
+# 2. Frontend
 bun install
-cp .env.example .env   # agrega tu GROQ_API_KEY (para Orbi)
-bun run api            # terminal 1: backend de Orbi en :8787
-bun run dev            # terminal 2: app en http://localhost:3016 (proxy /api → :8787)
-bun run build          # salida en dist/
+bun run dev                              # http://localhost:3016 (proxy /api → :8080)
 ```
 
-### Despliegue en Vercel
-El frontend (Vite) y el backend se despliegan juntos: `api/chat.ts` y `api/space-weather.ts` son funciones serverless que reutilizan `server/chat.ts` y `server/space-weather.ts` (los mismos handlers que usa `bun run api` en local).
-1. Sube el proyecto (o redepliega) en Vercel; `vercel.json` ya define build (`bun run build`) y salida (`dist`).
-2. En **Project → Settings → Environment Variables** agrega `GROQ_API_KEY` y `NASA_API_KEY`.
-3. Redepliega para que las funciones lean las variables.
+Con `SEED_DEMO=true` la pantalla de inicio muestra las cuentas de demo (contraseña `demo1234`).
 
-### Datos de la NASA
-- **NASA DONKI** (clima espacial, en vivo): `GET /api/space-weather` en `server/index.ts` consulta eventos de partículas solares (SEP) y llamaradas (FLR) con caché de 30 min. Usa `NASA_API_KEY` (gratis en api.nasa.gov) o `DEMO_KEY`. Alimenta el indicador “Eventos de partículas solares” (Inmunidad). En la tarjeta de clima espacial hay un interruptor para simular una tormenta en la demo.
-- **NASA OSDR OSD-575** (SpaceX Inspiration4, panel metabólico): `public/data/inspiration4-cmp.json` (derivado del CSV público). Compara glucosa, calcio y creatinina con una tripulación real en la pestaña Tendencias; los rangos de laboratorio definen los umbrales de calcio y creatinina.
-- **NASA-STD-3001**: límite de carrera de 600 mSv (radiación) y 250 mSv por evento solar. Fuentes de cada umbral en la pestaña Aprender.
-- **Pulso con cámara**: `src/components/CameraPulse.tsx` (fotopletismografía + autocorrelación) en Registrar signos.
+## Roles
 
-### Orbi (asistente)
-- `server/index.ts` — backend Bun con `groq-sdk` (`openai/gpt-oss-120b`, streaming, `reasoning_effort: medium`). La API key solo vive en el servidor.
-- `src/components/Assistant.tsx` + `Orbi.tsx` — mascota flotante y chat; envía las lecturas y riesgos actuales como contexto.
-- Da orientación general (prevención, autocuidado, tipos de medicamentos de botiquín); nunca dosis personalizadas: deriva al médico de vuelo.
+| Rol | Puede |
+|---|---|
+| **Astronauta** | Ver y registrar solo sus datos, rutina, logros, Orbi |
+| **Oficial médico de la tripulación** | Lo anterior + ver a toda su tripulación, atender alertas y dejar notas |
+| **Médico de vuelo** | Ver las misiones asignadas, revisar alertas, dejar recomendaciones, reporte. No registra mediciones |
+| **Control de misión** | Crear misiones y personas, asignar roles |
 
-## Estructura
-- `src/atlas/` — escena Three.js: color por sistema, pulso de alerta, encuadre animado, vistas (front/side/back), hover y selección.
-- `src/health/model.ts` — indicadores (umbrales, equipo de a bordo, por qué se mide, efecto del espacio, pasos, acciones), niveles de escalado, sistemas, entornos.
-- `src/health/data.ts` — datos simulados de la misión, estado por sistema, rutina diaria, entradas del astronauta (localStorage).
-- `src/health/report.ts` — reporte de texto para el médico de vuelo.
-- `src/router.ts` — rutas por hash: `#/body`, `#/vitals`, `#/routine`.
-- `src/pages/` — VitalsPage (registro + evaluación en vivo), RoutinePage.
-- `src/components/` — NavBar (MET), AttentionList, DetailPanel (Status / Trends / Learn), Escalation, TrendChart, Routine, Toasts, Timeline.
-- `src/styles/` — `tokens.css` (paleta NASA + colores de estado), `base.css`, `layout.css` (responsive), `components.css`. Sin estilos inline.
-- `public/models/` — `atlas.json` + 15 chunks `.bin.gz` (~33 MB).
+Los permisos se validan en el servidor: un astronauta recibe `403` si pide datos de otra persona.
 
-Datos simulados con fines de demostración. No es un dispositivo médico.
+## API (`/api`)
+
+| Método | Ruta | Quién |
+|---|---|---|
+| POST | `/auth/login` | público |
+| GET | `/config` | público (indica si hay cuentas de demo) |
+| GET | `/me` · `/catalog` | todos |
+| GET | `/readings?user=` | uno mismo, oficial médico, médico de vuelo, admin |
+| POST | `/readings` | astronauta, oficial médico (genera alertas) |
+| GET | `/routine` · `/progress` · `/report?lang=` | según acceso a la persona |
+| POST | `/routine/{tarea}/toggle` | astronauta, oficial médico |
+| GET | `/alerts?status=open` · POST `/alerts/{id}/notes` | según acceso |
+| POST | `/alerts/{id}/ack` | oficial médico, médico de vuelo |
+| GET | `/crew` | oficial médico, médico de vuelo, admin |
+| GET | `/space-weather` · `/osdr/cmp` | todos |
+| POST | `/chat` | astronauta, oficial médico (Orbi, streaming) |
+| GET/POST | `/admin/users` · `/admin/missions` | admin |
+
+El estado de cada sistema y el nivel de escalado (autocuidado → tripulación → médico de vuelo) se calculan en el servidor, así todos ven lo mismo.
+
+## Datos
+
+- **Catálogo** (indicadores, umbrales, pasos, acciones, riesgos, entornos, rutina y logros, en ES y EN): tablas `indicators`, `*_i18n`, etc., cargadas por la migración `000002_catalog`. Para cambiar un umbral o un texto, agrega una migración nueva en `backend/migrations/`.
+- **NASA OSDR OSD-575** (Inspiration4, panel metabólico real): tablas `osdr_*`, migración `000003` (datos originales en `backend/scripts/inspiration4-cmp.json`).
+- **NASA DONKI** (clima espacial): la API lo consulta cada 30 min, lo guarda en `external_cache` y registra los eventos solares del día como lectura `feed` de cada tripulante.
+- **Misión de demo** (`SEED_DEMO=true`): 4 astronautas emparejados con los 4 tripulantes anónimos de Inspiration4. Su glucosa, calcio y creatinina parten de sus **valores reales previos al vuelo** (OSDR). La NASA no publica signos vitales, sueño ni ánimo diarios de astronautas, así que esos se generan con semilla fija (`source = seed`). `SEED_DEMO=reset` recrea la demo para que abra en el día 87.
+
+## Despliegue
+
+### Backend en Railway
+1. **New Project → Deploy from GitHub repo** y elige este repositorio.
+2. En el servicio: **Settings → Root Directory = `/backend`** (usa `backend/Dockerfile` y `backend/railway.toml`).
+3. **+ New → Database → PostgreSQL**. En el servicio de la API agrega la variable `DATABASE_URL = ${{Postgres.DATABASE_URL}}`.
+4. Variables: `JWT_SECRET` (32+ caracteres al azar), `CORS_ORIGINS` (URL de Vercel, p. ej. `https://tu-app.vercel.app`), `SEED_DEMO=true`, `NASA_API_KEY`, `GROQ_API_KEY`.
+5. **Settings → Networking → Generate Domain**. Al desplegar, los logs muestran `migrations ready` y luego `CrewHealth API listening`.
+
+### Frontend en Vercel
+- Variable `VITE_API_URL` = dominio de Railway (p. ej. `https://crewhealth-api.up.railway.app`) y redepliega.
+
+Herramienta educativa con datos de demostración. No es un dispositivo médico.

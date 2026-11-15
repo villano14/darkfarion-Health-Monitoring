@@ -1,6 +1,7 @@
 import {useEffect, useState} from 'react';
+import {api} from '../api/client';
 
-/** Live space weather from NASA DONKI, proxied and cached by server/index.ts. */
+/** Live space weather from NASA DONKI, fetched and cached in PostgreSQL by the Go backend. */
 export interface SpaceWeather {
   status: 'loading' | 'ok' | 'error';
   fetchedAt?: string;
@@ -14,8 +15,7 @@ export function useSpaceWeather(): SpaceWeather & {recentSep: SpaceWeather['sep'
   const [data, setData] = useState<SpaceWeather>({status: 'loading', sep: [], flares: []});
   useEffect(() => {
     const abort = new AbortController();
-    fetch('/api/space-weather', {signal: abort.signal})
-      .then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+    api.spaceWeather()
       .then(d => setData({status: 'ok', fetchedAt: d.fetchedAt, sep: d.sep ?? [], flares: d.flares ?? []}))
       .catch(e => { if (e.name !== 'AbortError') setData(d => ({...d, status: 'error'})); });
     return () => abort.abort();
@@ -25,7 +25,7 @@ export function useSpaceWeather(): SpaceWeather & {recentSep: SpaceWeather['sep'
   return {...data, recentSep};
 }
 
-/** Real crew blood panel: NASA OSDR OSD-575 (SpaceX Inspiration4, 2021). Bundled in public/data. */
+/** Real crew blood panel: NASA OSDR OSD-575 (SpaceX Inspiration4, 2021), stored in the backend database. */
 export interface CrewPanel {
   source: string;
   url: string;
@@ -39,7 +39,7 @@ let panelCache: Promise<CrewPanel> | null = null;
 export function useCrewPanel(): CrewPanel | null {
   const [panel, setPanel] = useState<CrewPanel | null>(null);
   useEffect(() => {
-    panelCache ??= fetch('/data/inspiration4-cmp.json').then(r => r.json() as Promise<CrewPanel>);
+    panelCache ??= api.osdrPanel() as Promise<CrewPanel>;
     let alive = true;
     panelCache.then(p => { if (alive) setPanel(p); }).catch(() => { panelCache = null; });
     return () => { alive = false; };

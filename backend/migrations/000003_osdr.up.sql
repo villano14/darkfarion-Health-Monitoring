@@ -1,0 +1,31 @@
+-- NASA Open Science Data Repository OSD-575: real blood panel of the SpaceX Inspiration4 crew (anonymized).
+
+INSERT INTO osdr_datasets (id, source, url, mission, lab_ranges) VALUES ('OSD-575', 'NASA Open Science Data Repository, OSD-575 (LSDS-8): SpaceX Inspiration4 Comprehensive Metabolic Panel', 'https://osdr.nasa.gov/bio/repo/data/studies/OSD-575', 'Inspiration4, 3-day LEO mission, September 2021, 4 crew', '{"glucose":{"min":65,"max":99,"unit":"mg/dL"},"calcium":{"min":8.6,"max":10.3,"unit":"mg/dL"},"creatinine":{"min":0.6,"max":1.35,"unit":"mg/dL"}}'::jsonb);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C001', 'L-92', 0, 83, 9.7, 1.24);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C001', 'L-44', 1, 80, 10, 1.1);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C001', 'L-3', 2, 69, 9.6, 1.37);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C001', 'R+1', 3, 90, 9.7, 1.12);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C001', 'R+45', 4, 84, 9.6, 1.11);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C001', 'R+82', 5, 91, 10.1, 1.25);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C001', 'R+194', 6, 87, 9.4, 1.29);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C002', 'L-92', 0, 69, 10.2, 0.83);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C002', 'L-44', 1, 72, 9.7, 0.88);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C002', 'L-3', 2, 78, 9.3, 0.96);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C002', 'R+1', 3, 83, 9.2, 0.95);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C002', 'R+45', 4, 44, 9.3, 1.02);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C002', 'R+82', 5, 77, 9.7, 0.82);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C002', 'R+194', 6, 84, 9.5, 1.02);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C003', 'L-92', 0, 77, 9.3, 1);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C003', 'L-44', 1, 62, 10.3, 1.03);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C003', 'L-3', 2, 75, 9.5, 1.08);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C003', 'R+1', 3, 103, 9.4, 0.89);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C003', 'R+45', 4, 36, 9.6, 0.94);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C003', 'R+82', 5, 80, 10, 0.89);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C003', 'R+194', 6, 73, 9.6, 1.1);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C004', 'L-92', 0, 100, 10, 1.14);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C004', 'L-44', 1, 83, 10.1, 1.08);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C004', 'L-3', 2, 56, 10.2, 1.13);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C004', 'R+1', 3, 97, 9.8, 1.15);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C004', 'R+45', 4, 43, 9.8, 1.08);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C004', 'R+82', 5, 80, 10, 1.11);
+INSERT INTO osdr_cmp_samples VALUES ('OSD-575', 'C004', 'R+194', 6, 84, 9.8, 1.31);

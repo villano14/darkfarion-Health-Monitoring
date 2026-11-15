@@ -21,7 +21,7 @@ interface Props {
   env: Environment;
   state: GroupState;
   onClose: () => void;
-  report: () => string;
+  report: () => Promise<string>;
 }
 
 /** One floating card around the body. */

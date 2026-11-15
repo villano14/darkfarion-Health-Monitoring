@@ -6,7 +6,7 @@ import {useI18n} from '../i18n';
 interface Props {
   tier: Exclude<Tier, 'none'>;
   env: Environment;
-  report: () => string;
+  report: () => Promise<string>;
 }
 
 const ICON = {self: UserRound, crew: Users, surgeon: Stethoscope};
@@ -25,10 +25,10 @@ export default function Escalation({tier, env, report}: Props) {
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(report());
+      await navigator.clipboard.writeText(await report());
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
-    } catch { /* clipboard unavailable */ }
+    } catch { /* clipboard or network unavailable */ }
   };
 
   return (

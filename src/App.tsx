@@ -4,10 +4,10 @@ import AnatomyScene, {type Highlight, type Insets, type ViewDirection} from './a
 import type {Atlas, Part, SystemId} from './atlas/anatomy';
 import {STAGES} from './atlas/environments';
 import EnvironmentSwitch from './components/EnvironmentSwitch';
-import {groupStates, useHealthLog, useNow, useRoutine} from './health/data';
-import {buildReport} from './health/report';
-import {buildContext} from './health/context';
-import {crewSummary, useCrewPanel, useSpaceWeather} from './health/nasa';
+import {groupStates, useHealthLog, useNow, useProgress, useRoutine} from './health/data';
+import {useSpaceWeather} from './health/nasa';
+import {api} from './api/client';
+import {useSession} from './api/session';
 import {
   ENVIRONMENTS, GROUP, GROUPS, TODAY, groupOfSystem,
   type EnvironmentId, type GroupId, type IndicatorId, type Reading, type Status,
@@ -22,6 +22,8 @@ import {Segmented} from './components/ui';
 import {useI18n} from './i18n';
 import VitalsPage from './pages/VitalsPage';
 import RoutinePage from './pages/RoutinePage';
+import CrewPage from './pages/CrewPage';
+import AdminPage from './pages/AdminPage';
 import Assistant from './components/Assistant';
 import SpaceWeatherCard from './components/SpaceWeatherCard';
 
@@ -35,18 +37,22 @@ const BLUE_CONTEXT = '#c9d7ee';
 const RISK: Record<Exclude<Status, 'normal'>, string> = {watch: '#f7c531', alert: '#fc3d21'};
 /** The whole body: muscles and connective tissue included, shown translucent so inner organs stay visible. */
 const OVERVIEW: SystemId[] = ['muscular', 'connective', 'skeletal', 'cardiac', 'arterial', 'venous', 'nervous', 'respiratory', 'digestive', 'urinary', 'lymphatic', 'endocrine', 'sensory', 'reproductive'];
-const STREAK_BEFORE_TODAY = 14; // demo history
 const NO_INSETS: Insets = {top: 0, right: 0, bottom: 0};
 
 export default function App() {
   const [route, go] = useRoute();
+  const session = useSession();
   const L = useI18n(), {t} = L;
   const i18n = useRef(L);
   i18n.current = L;
   const [atlas, setAtlas] = useState<Atlas | null>(null);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState('');
-  const [envId, setEnvId] = useState<EnvironmentId>('iss');
+  // Defaults to the mission's environment; the switch on the stage changes the view.
+  const [envId, setEnvId] = useState<EnvironmentId>(() => (session.me.mission?.mission.environment ?? 'iss') as EnvironmentId);
+  // Whose health is on screen: yourself, or a crew member opened from the crew page.
+  const [subject, setSubject] = useState<number | undefined>(undefined);
+  const [subjectName, setSubjectName] = useState('');
   const [day, setDay] = useState(TODAY);
   const [playing, setPlaying] = useState(false);
   const [selected, setSelected] = useState<GroupId | null>(null);
@@ -59,11 +65,31 @@ export default function App() {
   const now = useNow();
   const env = ENVIRONMENTS.find(e => e.id === envId)!;
   const weather = useSpaceWeather();
-  const crewPanel = useCrewPanel();
   const [simulateStorm, setSimulateStorm] = useState(false);
-  const solarToday = simulateStorm ? Math.max(1, weather.recentSep.length) : weather.recentSep.length;
-  const {log, record, today, done, total} = useHealthLog(env, solarToday);
-  const routine = useRoutine(today, now);
+  // The live NASA DONKI count is stored by the backend; the demo switch only overlays a storm on screen.
+  const {log, record, today, done, total, error: dataError} = useHealthLog(subject, simulateStorm ? Math.max(1, weather.recentSep.length) : null);
+  const viewingOther = subject !== undefined && subject !== session.me.user.id;
+  const canRecord = session.isCrew && !viewingOther;
+  const routine = useRoutine(subject, now, log);
+  const progressInfo = useProgress(subject, log);
+
+  // Flight surgeon and mission control have no health record: open the crew member who needs most attention.
+  useEffect(() => {
+    if (session.isCrew || subject !== undefined) return;
+    const rank = {none: 0, self: 1, crew: 2, surgeon: 3};
+    api.crew().then(missions => {
+      const people = missions.flatMap(m => m.crew).sort((a, b) => rank[b.tier] - rank[a.tier]);
+      if (people[0]) { setSubject(people[0].id); setSubjectName(people[0].name); }
+    }).catch(() => {});
+  }, [session.isCrew, subject]);
+  const openPerson = useCallback((id: number) => {
+    const name = session.me.mission?.crew.find(c => c.id === id)?.name ?? '';
+    setSubject(id === session.me.user.id ? undefined : id);
+    setSubjectName(name);
+    setSelected(null);
+    setDay(TODAY);
+    go('body');
+  }, [session.me, go]);
 
   useEffect(() => {
     const abort = new AbortController();
@@ -120,7 +146,16 @@ export default function App() {
     }
     previous.current = states;
   }, [states]);
-  const save = useCallback((values: Partial<Record<IndicatorId, Reading>>) => { saved.current = true; record(values); setDay(TODAY); }, [record]);
+  const save = useCallback(async (values: Partial<Record<IndicatorId, Reading>>, sources?: Partial<Record<IndicatorId, string>>) => {
+    saved.current = true;
+    try {
+      await record(values, sources);
+      setDay(TODAY);
+    } catch {
+      saved.current = false;
+      setToasts(list => [...list, {id: Date.now(), status: 'alert', text: i18n.current.t('toast.saveFailed')}]);
+    }
+  }, [record]);
   const dismiss = useCallback((id: number) => setToasts(t => t.filter(x => x.id !== id)), []);
 
   // Scene inputs: memoized so the scene only reacts to real changes.
@@ -163,33 +198,19 @@ export default function App() {
   const onPick = useCallback((part: Part | null) => {
     setSelected(part ? groupOfSystem(part.system) : null);
   }, []);
-  const report = useCallback(() => buildReport(log, day, env), [log, day, env]);
-  const healthContext = useCallback(() => {
-    const lines = [buildContext(log, day, env), '', 'NASA data:'];
-    if (weather.status === 'ok') {
-      lines.push(`- Space weather (NASA DONKI, live): ${weather.recentSep.length} solar particle events in the last 3 days; last event ${weather.sep[0]?.time ?? 'none in 60 days'}; ${weather.flares.length} solar flares in 14 days.`);
-    }
-    if (simulateStorm) lines.push('- Demo: a solar particle event is being simulated right now.');
-    if (crewPanel) {
-      for (const a of ['glucose', 'calcium', 'creatinine'] as const) {
-        const c = crewSummary(crewPanel, a);
-        lines.push(`- Inspiration4 crew ${a} (NASA OSDR OSD-575): pre-flight mean ${c.preflight.toFixed(2)}, landing day mean ${c.landing.toFixed(2)}, range ${c.min}-${c.max} ${c.range.unit}.`);
-      }
-    }
-    lines.push('- NASA-STD-3001: career radiation limit 600 mSv; 250 mSv per solar particle event.');
-    return lines.join('\n');
-  }, [log, day, env, weather, simulateStorm, crewPanel]);
+  // The flight surgeon report is written by the backend from the database.
+  const report = useCallback(() => api.report(subject ?? session.me.user.id, L.lang, envId), [subject, session.me.user.id, L.lang, envId]);
   const viewOnBody = useCallback((g: GroupId) => { setDay(TODAY); setSelected(g); go('body'); }, [go]);
 
   const loading = !error && progress < 100;
-  const streak = STREAK_BEFORE_TODAY + (done === total ? 1 : 0);
+  const streak = progressInfo?.streak ?? 0;
   const overdue = routine.tasks.filter(t => t.state === 'overdue').length;
   const hoveredGroup = hovered ? groupOfSystem(hovered.system) : null;
 
   return (
     <div className="app" data-route={route}>
       <NavBar
-        route={route} now={now} streak={streak}
+        route={route} now={now} streak={streak} canRecord={canRecord}
         vitalsDone={done} vitalsTotal={total} overdue={overdue}
       />
 
@@ -202,6 +223,16 @@ export default function App() {
               onPick={onPick} onHover={setHovered} onProgress={setProgress} onError={setError}
             />
           )}
+
+          {viewingOther && (
+            <div className="viewing-banner" role="status">
+              <span>{t('viewing.label', {name: subjectName})}</span>
+              {session.isCrew
+                ? <button className="link-btn" onClick={() => { setSubject(undefined); setSelected(null); }}>{t('viewing.back')}</button>
+                : <a className="link-btn" href="#/crew">{t('viewing.change')}</a>}
+            </div>
+          )}
+          {dataError && <div className="loader loader-error" role="alert">{t('session.offline')}</div>}
 
           {!loading && !error && !selected && (
             <div className="body-side">
@@ -258,15 +289,17 @@ export default function App() {
         <Timeline day={day} onDay={setDay} playing={playing} onPlaying={setPlaying} />
       </div>
 
-      {route === 'vitals' && <VitalsPage initial={today} onSave={save} onViewBody={viewOnBody} />}
+      {route === 'vitals' && canRecord && <VitalsPage initial={today} onSave={save} onViewBody={viewOnBody} />}
       {route === 'routine' && (
         <RoutinePage
-          tasks={routine.tasks} completed={routine.completed} streak={streak}
+          tasks={routine.tasks} completed={routine.completed} progress={progressInfo} canAct={canRecord}
           onToggle={routine.toggle} onLog={() => go('vitals')}
         />
       )}
+      {route === 'crew' && session.isStaff && <CrewPage onOpen={openPerson} />}
+      {route === 'admin' && session.role === 'admin' && <AdminPage />}
 
-      <Assistant states={states} context={healthContext} />
+      {canRecord && <Assistant states={states} environment={envId} />}
       <Toasts toasts={toasts} onDismiss={dismiss} />
     </div>
   );

@@ -11,7 +11,7 @@ import type {GroupId} from '../health/model';
 
 interface Props {
   initial: Partial<Record<IndicatorId, Reading>>;
-  onSave: (values: Partial<Record<IndicatorId, Reading>>) => void;
+  onSave: (values: Partial<Record<IndicatorId, Reading>>, sources?: Partial<Record<IndicatorId, string>>) => Promise<void>;
   onViewBody: (group: GroupId) => void;
 }
 
@@ -37,10 +37,14 @@ export default function VitalsPage({initial, onSave, onViewBody}: Props) {
   const [draft, setDraft] = useState<Draft>(() => toDraft(initial));
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [pulseOpen, setPulseOpen] = useState(false);
+  // Pulse measured with the camera is stored with its source; typing over it makes it manual again.
+  const [cameraBpm, setCameraBpm] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   useEffect(() => { setDraft(toDraft(initial)); }, [initial]);
 
   const set = (id: IndicatorId, index: number, value: string) => {
     setSavedAt(null);
+    if (id === 'hr') setCameraBpm(null);
     setDraft(d => {
       const next = [...(d[id] ?? [])];
       next[index] = value;
@@ -55,9 +59,12 @@ export default function VitalsPage({initial, onSave, onViewBody}: Props) {
   }), [draft, fields]);
   const findings = readings.filter(r => r.a.status !== 'normal').sort((x, y) => RANK[x.a.status] - RANK[y.a.status]);
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
-    onSave(Object.fromEntries(readings.map(r => [r.i.id, r.v])));
+    setSaving(true);
+    const hr = draft.hr?.[0];
+    await onSave(Object.fromEntries(readings.map(r => [r.i.id, r.v])), cameraBpm !== null && hr === cameraBpm ? {hr: 'camera'} : undefined);
+    setSaving(false);
     setSavedAt(new Date().toTimeString().slice(0, 5));
   };
 
@@ -121,7 +128,7 @@ export default function VitalsPage({initial, onSave, onViewBody}: Props) {
           </div>
           <div className="form-actions">
             {savedAt && <span className="saved"><CircleCheck aria-hidden="true" />{t('vitals.savedAt', {t: savedAt})}</span>}
-            <button type="submit" className="btn btn-primary" disabled={!readings.length}>{t('vitals.save')}</button>
+            <button type="submit" className="btn btn-primary" disabled={!readings.length || saving}>{t('vitals.save')}</button>
           </div>
         </form>
 
@@ -173,7 +180,7 @@ export default function VitalsPage({initial, onSave, onViewBody}: Props) {
           <p className="disclaimer">{t('vitals.disclaimer')}</p>
         </aside>
       </div>
-      <CameraPulse open={pulseOpen} onClose={() => setPulseOpen(false)} onResult={bpm => set('hr', 0, String(bpm))} />
+      <CameraPulse open={pulseOpen} onClose={() => setPulseOpen(false)} onResult={bpm => { set('hr', 0, String(bpm)); setCameraBpm(String(bpm)); }} />
     </div>
   );
 }

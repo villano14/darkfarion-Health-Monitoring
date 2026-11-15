@@ -1,10 +1,13 @@
-import {ClipboardPlus, Flame, ListChecks, PersonStanding} from 'lucide-react';
+import {ClipboardPlus, Flame, ListChecks, LogOut, PersonStanding, ShieldCheck, Users} from 'lucide-react';
+import {useSession} from '../api/session';
 import {TODAY} from '../health/model';
 import {useI18n, type Lang} from '../i18n';
 import type {Route} from '../router';
 
 interface Props {
   route: Route;
+  /** The signed-in user logs their own health (hidden for the flight surgeon and mission control). */
+  canRecord: boolean;
   now: Date;
   streak: number;
   vitalsDone: number;
@@ -18,14 +21,17 @@ const LANGS: {id: Lang; label: string; name: string}[] = [
   {id: 'es', label: 'ES', name: 'Español'},
 ];
 
-export default function NavBar({route, now, streak, vitalsDone, vitalsTotal, overdue}: Props) {
+export default function NavBar({route, canRecord, now, streak, vitalsDone, vitalsTotal, overdue}: Props) {
   const {t, lang, setLang} = useI18n();
   // Mission elapsed time: DDD:HH:MM:SS since launch.
   const met = `${pad(TODAY - 1, 3)}:${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  const {me, isStaff, role, logout} = useSession();
   const links = [
     {id: 'body' as const, label: t('nav.body'), icon: PersonStanding, badge: null},
-    {id: 'vitals' as const, label: t('nav.vitals'), icon: ClipboardPlus, badge: vitalsDone < vitalsTotal ? `${vitalsDone}/${vitalsTotal}` : null},
-    {id: 'routine' as const, label: t('nav.routine'), icon: ListChecks, badge: overdue ? String(overdue) : null},
+    ...(canRecord ? [{id: 'vitals' as const, label: t('nav.vitals'), icon: ClipboardPlus, badge: vitalsDone < vitalsTotal ? `${vitalsDone}/${vitalsTotal}` : null}] : []),
+    ...(canRecord ? [{id: 'routine' as const, label: t('nav.routine'), icon: ListChecks, badge: overdue ? String(overdue) : null}] : []),
+    ...(isStaff ? [{id: 'crew' as const, label: t('nav.crew'), icon: Users, badge: null}] : []),
+    ...(role === 'admin' ? [{id: 'admin' as const, label: t('nav.admin'), icon: ShieldCheck, badge: null}] : []),
   ];
   return (
     <header className="navbar">
@@ -60,11 +66,21 @@ export default function NavBar({route, now, streak, vitalsDone, vitalsTotal, ove
           <span className="met-label">MET</span>
           <span className="met-value">{met}</span>
         </div>
-        <span className="streak" title={t('nav.streak', {n: streak})}>
-          <Flame aria-hidden="true" />
-          <span>{streak}</span>
-          <span className="sr-only">{t('nav.streak', {n: streak})}</span>
-        </span>
+        {canRecord && (
+          <span className="streak" title={t('nav.streak', {n: streak})}>
+            <Flame aria-hidden="true" />
+            <span>{streak}</span>
+            <span className="sr-only">{t('nav.streak', {n: streak})}</span>
+          </span>
+        )}
+        <div className="user-menu" title={`${me.user.name} · ${t(`role.${role}`)}`}>
+          <span className="avatar avatar-small" aria-hidden="true">{me.user.initials}</span>
+          <span className="user-name">
+            <strong>{me.user.name}</strong>
+            <span>{t(`role.${role}`)}</span>
+          </span>
+          <button className="icon-btn" onClick={logout} aria-label={t('nav.logout')} title={t('nav.logout')}><LogOut aria-hidden="true" /></button>
+        </div>
       </div>
     </header>
   );
