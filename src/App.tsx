@@ -2,6 +2,8 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {RotateCcw} from 'lucide-react';
 import AnatomyScene, {type Highlight, type Insets, type ViewDirection} from './atlas/scene';
 import type {Atlas, Part, SystemId} from './atlas/anatomy';
+import {STAGES} from './atlas/environments';
+import EnvironmentSwitch from './components/EnvironmentSwitch';
 import {groupStates, useHealthLog, useNow, useRoutine} from './health/data';
 import {buildReport} from './health/report';
 import {buildContext} from './health/context';
@@ -187,7 +189,7 @@ export default function App() {
   return (
     <div className="app" data-route={route}>
       <NavBar
-        route={route} env={envId} onEnv={setEnvId} now={now} streak={streak}
+        route={route} now={now} streak={streak}
         vitalsDone={done} vitalsTotal={total} overdue={overdue}
       />
 
@@ -196,7 +198,7 @@ export default function App() {
         <main className="stage">
           {atlas && (
             <AnatomyScene
-              atlas={atlas} visible={visible} colors={colors} opacity={opacity} highlights={highlights} focus={focus} view={view} insets={insets}
+              atlas={atlas} visible={visible} colors={colors} opacity={opacity} highlights={highlights} focus={focus} view={view} insets={insets} stage={STAGES[envId]}
               onPick={onPick} onHover={setHovered} onProgress={setProgress} onError={setError}
             />
           )}
@@ -207,6 +209,8 @@ export default function App() {
               <SpaceWeatherCard weather={weather} simulated={simulateStorm} onSimulate={setSimulateStorm} />
             </div>
           )}
+
+          {!error && <EnvironmentSwitch value={envId} onChange={setEnvId} />}
 
           {loading && (
             <div className="loader" role="status">

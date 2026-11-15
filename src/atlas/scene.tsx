@@ -6,6 +6,7 @@ import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import {decodeModelResponse} from './model-download';
 import {PointerTap} from './pointer-tap';
 import type {Atlas, Part, SystemId} from './anatomy';
+import type {StagePreset} from './environments';
 
 export type ViewDirection = 'angle' | 'front' | 'side' | 'back';
 const DIRECTIONS: Record<ViewDirection, T.Vector3> = {
@@ -39,6 +40,8 @@ export interface SceneProps {
   onPick: (part: Part | null) => void;
   /** Called while the mouse hovers parts. */
   onHover?: (part: Part | null) => void;
+  /** Background, ground, lights and starfield of the current mission environment. */
+  stage: StagePreset;
   onProgress: (percent: number) => void;
   onError: (message: string) => void;
 }
@@ -62,12 +65,11 @@ export default function AnatomyScene(props: SceneProps) {
 
     let renderer: T.WebGLRenderer;
     try {
-      renderer = new T.WebGLRenderer({antialias: true, alpha: true, powerPreference: 'high-performance'});
+      renderer = new T.WebGLRenderer({antialias: true, alpha: false, powerPreference: 'high-performance'});
     } catch {
       latest.current.onError('WebGL is not available in this browser.');
       return;
     }
-    renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = T.SRGBColorSpace;
     renderer.toneMapping = T.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.1;
@@ -75,12 +77,16 @@ export default function AnatomyScene(props: SceneProps) {
     el.appendChild(renderer.domElement);
 
     const scene = new T.Scene();
+    const background = new T.Color(latest.current.stage.background);
+    scene.background = background;
     const camera = new T.PerspectiveCamera(34, 1, 0.005, 100);
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.085;
     controls.minDistance = 0.12;
     controls.maxDistance = 12;
+    // Keep the camera above the floor.
+    controls.maxPolarAngle = Math.PI * 0.96;
     controls.addEventListener('change', () => { dirty = true; });
 
     const pmrem = new T.PMREMGenerator(renderer), room = new RoomEnvironment();
@@ -88,13 +94,71 @@ export default function AnatomyScene(props: SceneProps) {
     scene.environment = env.texture;
     room.dispose();
     pmrem.dispose();
-    scene.add(new T.HemisphereLight(0xffffff, 0xa7acb2, 1.05));
-    const key = new T.DirectionalLight(0xfffaf4, 2.3);
+    const hemi = new T.HemisphereLight(0x8fb8ff, 0x1a2433, 1.05);
+    scene.add(hemi);
+    const key = new T.DirectionalLight(0xfff4e6, 2.6);
     key.position.set(-2, 4, 3);
     scene.add(key);
-    const rim = new T.DirectionalLight(0xe9f0ff, 1.8);
+    const rim = new T.DirectionalLight(0x7fb6ff, 2.0);
     rim.position.set(2, 2, -3);
     scene.add(rim);
+
+    // --- Stage: floor, platform with rings, and a starfield -------------------
+    const stageMaterials: T.Material[] = [], stageGeometries: T.BufferGeometry[] = [];
+    const add = <M extends T.Material>(geometry: T.BufferGeometry, m: M, place: (o: T.Object3D) => void) => {
+      const mesh = new T.Mesh(geometry, m);
+      place(mesh);
+      scene.add(mesh);
+      stageMaterials.push(m);
+      stageGeometries.push(geometry);
+      return m;
+    };
+    const flat = (y: number) => (o: T.Object3D) => { o.rotation.x = -Math.PI / 2; o.position.y = y; };
+    const groundMaterial = add(new T.CircleGeometry(30, 96), new T.MeshStandardMaterial({roughness: 1, envMapIntensity: 0.25}), flat(-0.019));
+    const platformMaterial = add(
+      new T.CylinderGeometry(0.68, 0.7, 0.028, 100), new T.MeshStandardMaterial({metalness: 0.12, roughness: 0.67}),
+      o => { o.position.y = -0.016; },
+    );
+    const ringMaterial = add(
+      new T.RingGeometry(0.63, 0.632, 128), new T.MeshBasicMaterial({transparent: true, opacity: 0.4, side: T.DoubleSide}), flat(0.001),
+    );
+    const innerRingMaterial = add(
+      new T.RingGeometry(0.55, 0.551, 128), new T.MeshBasicMaterial({transparent: true, opacity: 0.16, side: T.DoubleSide}), flat(0.001),
+    );
+
+    const STARS = 1800, starPositions = new Float32Array(STARS * 3);
+    for (let i = 0; i < STARS; i++) {
+      const radius = 14 + Math.random() * 22, theta = Math.random() * Math.PI * 2, phi = Math.acos(2 * Math.random() - 1);
+      starPositions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+      starPositions[i * 3 + 1] = radius * Math.cos(phi);
+      starPositions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta);
+    }
+    const starGeometry = new T.BufferGeometry();
+    starGeometry.setAttribute('position', new T.BufferAttribute(starPositions, 3));
+    const starMaterial = new T.PointsMaterial({color: 0xdfe9ff, size: 0.07, sizeAttenuation: true, transparent: true, opacity: 0.85, depthWrite: false});
+    const stars = new T.Points(starGeometry, starMaterial);
+    stars.frustumCulled = false;
+    scene.add(stars);
+    stageMaterials.push(starMaterial);
+    stageGeometries.push(starGeometry);
+
+    const applyStage = (preset: StagePreset) => {
+      background.setHex(preset.background);
+      renderer.toneMappingExposure = preset.exposure;
+      hemi.color.setHex(preset.hemiSky);
+      hemi.groundColor.setHex(preset.hemiGround);
+      hemi.intensity = preset.hemiIntensity;
+      key.color.setHex(preset.keyColor);
+      key.intensity = preset.keyIntensity;
+      rim.color.setHex(preset.rimColor);
+      rim.intensity = preset.rimIntensity;
+      groundMaterial.color.setHex(preset.ground);
+      platformMaterial.color.setHex(preset.platform);
+      ringMaterial.color.setHex(preset.ring);
+      innerRingMaterial.color.setHex(preset.ring);
+      stars.visible = preset.stars;
+      dirty = true;
+    };
 
     // One material and one mesh list per anatomical system.
     const materials = new Map<SystemId, T.MeshStandardMaterial>();
@@ -318,6 +382,7 @@ export default function AnatomyScene(props: SceneProps) {
         materials.forEach((m, system) => { m.color.set(p.colors[system] ?? NEUTRAL); applyOpacity(system, m); });
         dirty = true;
       }
+      if (!last || p.stage !== last.stage) applyStage(p.stage);
       if (overlaysDirty || !last || p.highlights !== last.highlights || p.visible !== last.visible) buildOverlays();
       if (last && p.view !== last.view) direction = DIRECTIONS[p.view.direction];
       if (!last || p.focus !== last.focus || p.view !== last.view || p.insets !== last.insets) frameBox(focusBox(), !last);
@@ -356,6 +421,8 @@ export default function AnatomyScene(props: SceneProps) {
       geometries.forEach(g => g.dispose());
       materials.forEach(m => m.dispose());
       overlayMaterials.forEach(o => o.m.dispose());
+      stageMaterials.forEach(m => m.dispose());
+      stageGeometries.forEach(g => g.dispose());
       env.dispose();
       renderer.dispose();
       canvas.remove();

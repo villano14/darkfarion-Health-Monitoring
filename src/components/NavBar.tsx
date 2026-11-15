@@ -1,12 +1,10 @@
 import {ClipboardPlus, Flame, ListChecks, PersonStanding} from 'lucide-react';
-import {ENVIRONMENTS, TODAY, type EnvironmentId} from '../health/model';
+import {TODAY} from '../health/model';
 import {useI18n, type Lang} from '../i18n';
 import type {Route} from '../router';
 
 interface Props {
   route: Route;
-  env: EnvironmentId;
-  onEnv: (id: EnvironmentId) => void;
   now: Date;
   streak: number;
   vitalsDone: number;
@@ -20,8 +18,8 @@ const LANGS: {id: Lang; label: string; name: string}[] = [
   {id: 'es', label: 'ES', name: 'Español'},
 ];
 
-export default function NavBar({route, env, onEnv, now, streak, vitalsDone, vitalsTotal, overdue}: Props) {
-  const {t, lang, setLang, env: envName} = useI18n();
+export default function NavBar({route, now, streak, vitalsDone, vitalsTotal, overdue}: Props) {
+  const {t, lang, setLang} = useI18n();
   // Mission elapsed time: DDD:HH:MM:SS since launch.
   const met = `${pad(TODAY - 1, 3)}:${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
   const links = [
@@ -58,12 +56,6 @@ export default function NavBar({route, env, onEnv, now, streak, vitalsDone, vita
             </button>
           ))}
         </div>
-        <label className="env">
-          <span className="sr-only">{t('nav.env')}</span>
-          <select value={env} onChange={e => onEnv(e.target.value as EnvironmentId)}>
-            {ENVIRONMENTS.map(e => <option key={e.id} value={e.id}>{envName(e)}</option>)}
-          </select>
-        </label>
         <div className="met" title={t('nav.met')}>
           <span className="met-label">MET</span>
           <span className="met-value">{met}</span>
