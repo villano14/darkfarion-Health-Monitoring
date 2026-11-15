@@ -11,7 +11,7 @@ export default function EnvironmentSwitch({value, onChange}: Props) {
   const {t, env: envName} = useI18n();
   return (
     <nav className="env-switch" aria-label={t('nav.env')}>
-      <span className="env-switch-caption">{t('env.caption')}</span>
+      <span className="env-switch-caption label">{t('env.caption')}</span>
       <div className="env-switch-options">
         {ENVIRONMENTS.map(e => (
           <button

@@ -27,7 +27,7 @@ export default function LoginPage({config}: {config: AppConfig}) {
 
   return (
     <main className="login">
-      <section className="login-card" aria-labelledby="login-title">
+      <section className="login-card plate" aria-labelledby="login-title">
         <div className="login-brand">
           <svg className="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="12" cy="12" r="5" />
@@ -58,7 +58,7 @@ export default function LoginPage({config}: {config: AppConfig}) {
 
         {config.demo && config.demoAccounts && (
           <div className="login-demo">
-            <h2>{t('login.demo')}</h2>
+            <h2 className="label">{t('login.demo')}</h2>
             <p className="muted">{t('login.demoSub', {p: config.demoAccounts[0]?.password ?? ''})}</p>
             <ul>
               {config.demoAccounts.map(a => (

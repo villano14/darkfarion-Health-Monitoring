@@ -18,7 +18,8 @@ const DIRECTIONS: Record<ViewDirection, T.Vector3> = {
 
 export interface Insets {top: number; right: number; bottom: number; left?: number}
 /** Parts painted over the base body (an affected organ or zone). */
-export interface Highlight {ids: string[]; color: string; pulse: boolean}
+/** `label` annotates the zone on the chart: the system's name and the reading behind its state. */
+export interface Highlight {ids: string[]; color: string; pulse: boolean; label?: {name: string; value: string}}
 
 export interface SceneProps {
   atlas: Atlas;
@@ -114,9 +115,10 @@ export default function AnatomyScene(props: SceneProps) {
       return m;
     };
     const flat = (y: number) => (o: T.Object3D) => { o.rotation.x = -Math.PI / 2; o.position.y = y; };
-    const groundMaterial = add(new T.CircleGeometry(30, 96), new T.MeshStandardMaterial({roughness: 1, envMapIntensity: 0.25}), flat(-0.019));
+    // Unlit floor: it holds the exact night tone of the environment instead of catching the room light.
+    const groundMaterial = add(new T.CircleGeometry(30, 96), new T.MeshBasicMaterial(), flat(-0.019));
     const platformMaterial = add(
-      new T.CylinderGeometry(0.68, 0.7, 0.028, 100), new T.MeshStandardMaterial({metalness: 0.12, roughness: 0.67}),
+      new T.CylinderGeometry(0.68, 0.7, 0.028, 100), new T.MeshStandardMaterial({metalness: 0.12, roughness: 0.8, envMapIntensity: 0.1}),
       o => { o.position.y = -0.016; },
     );
     const ringMaterial = add(
@@ -197,6 +199,8 @@ export default function AnatomyScene(props: SceneProps) {
       overlayMaterials.forEach(o => o.m.dispose());
       overlayMaterials = [];
       const visible = new Set(latest.current.visible);
+      reticle.visible = false;
+      label.visible = false;
       for (const h of latest.current.highlights) {
         const m = new T.MeshStandardMaterial({
           color: h.color, metalness: 0.06, roughness: 0.5, side: T.DoubleSide,
@@ -215,11 +219,90 @@ export default function AnatomyScene(props: SceneProps) {
           mesh.frustumCulled = false;
           overlays.add(mesh);
         }
+        // The first alert zone that is on screen gets the reticle.
+        if (h.pulse && !reticle.visible) {
+          const box = new T.Box3();
+          for (const id of h.ids) {
+            const i = indexOf.get(id);
+            if (i !== undefined && pickers[i] && visible.has(atlas.parts[i].system)) box.union(bounds[i]);
+          }
+          if (!box.isEmpty()) {
+            const size = box.getSize(new T.Vector3());
+            box.getCenter(reticle.position);
+            reticle.scale.setScalar(T.MathUtils.clamp(Math.max(size.x, size.y) * 1.9, 0.16, 0.42));
+            reticle.visible = true;
+            // Phones: the object index already carries the reading; the annotation would cover the body.
+            if (h.label && el.clientWidth >= 700) {
+              drawLabel(h.label.name, h.label.value);
+              const height = Math.max(0.09, reticle.scale.x * 0.62);
+              label.scale.set(height * (1024 / 192), height, 1);
+              label.position.copy(reticle.position);
+              // Anchor the label's left edge just outside the reticle's rim, in screen space, from any view.
+              label.center.set(-(reticle.scale.x * 0.5) / label.scale.x, 0.5);
+              label.visible = true;
+            }
+          }
+        }
       }
       overlaysDirty = false;
       dirty = true;
     };
     const geometries: T.BufferGeometry[] = [];
+
+    // The alert system sits under a star-chart reticle (ring, four ticks, center point).
+    const reticleCanvas = document.createElement('canvas');
+    reticleCanvas.width = reticleCanvas.height = 256;
+    const rg = reticleCanvas.getContext('2d')!;
+    rg.strokeStyle = rg.fillStyle = '#fc3d21';
+    rg.lineWidth = 5;
+    rg.beginPath(); rg.arc(128, 128, 74, 0, Math.PI * 2); rg.stroke();
+    rg.lineWidth = 2;
+    rg.beginPath(); rg.arc(128, 128, 96, 0, Math.PI * 2); rg.globalAlpha = 0.45; rg.stroke(); rg.globalAlpha = 1;
+    rg.lineWidth = 5;
+    for (const [x1, y1, x2, y2] of [[128, 8, 128, 58], [128, 198, 128, 248], [8, 128, 58, 128], [198, 128, 248, 128]]) {
+      rg.beginPath(); rg.moveTo(x1, y1); rg.lineTo(x2, y2); rg.stroke();
+    }
+    rg.beginPath(); rg.arc(128, 128, 7, 0, Math.PI * 2); rg.fill();
+    const reticleTexture = new T.CanvasTexture(reticleCanvas);
+    reticleTexture.colorSpace = T.SRGBColorSpace;
+    const reticleMaterial = new T.SpriteMaterial({map: reticleTexture, transparent: true, depthTest: false, depthWrite: false, toneMapped: false});
+    const reticle = new T.Sprite(reticleMaterial);
+    reticle.renderOrder = 20;
+    reticle.visible = false;
+    scene.add(reticle);
+
+    // Chart annotation beside the reticle: a leader line, the system's italic name, its reading.
+    const labelCanvas = document.createElement('canvas');
+    labelCanvas.width = 1024;
+    labelCanvas.height = 192;
+    const labelTexture = new T.CanvasTexture(labelCanvas);
+    labelTexture.colorSpace = T.SRGBColorSpace;
+    const labelMaterial = new T.SpriteMaterial({map: labelTexture, transparent: true, depthTest: false, depthWrite: false, toneMapped: false});
+    const label = new T.Sprite(labelMaterial);
+    label.renderOrder = 21;
+    label.visible = false;
+    scene.add(label);
+    let labelKey = '';
+    const drawLabel = (name: string, value: string) => {
+      const key = `${name}|${value}`;
+      if (key === labelKey) return;
+      labelKey = key;
+      const g = labelCanvas.getContext('2d')!;
+      g.clearRect(0, 0, labelCanvas.width, labelCanvas.height);
+      g.strokeStyle = '#fc3d21';
+      g.lineWidth = 3;
+      g.beginPath(); g.moveTo(0, 96); g.lineTo(150, 96); g.lineTo(190, 60); g.stroke();
+      g.fillStyle = '#f2f2e9';
+      g.font = 'italic 500 64px "Source Serif 4 Variable", Georgia, serif';
+      g.textBaseline = 'alphabetic';
+      g.fillText(name, 205, 74);
+      g.fillStyle = '#ff8069';
+      g.font = '600 46px "Public Sans Variable", system-ui, sans-serif';
+      g.fillText(value, 207, 138);
+      labelTexture.needsUpdate = true;
+    };
+    // Canvas text needs the faces loaded; redraw once they are.
+    document.fonts?.ready.then(() => { labelKey = ''; overlaysDirty = true; });
 
     // --- Loading -----------------------------------------------------------
     let loaded = 0;
@@ -421,6 +504,10 @@ export default function AnatomyScene(props: SceneProps) {
       geometries.forEach(g => g.dispose());
       materials.forEach(m => m.dispose());
       overlayMaterials.forEach(o => o.m.dispose());
+      reticleMaterial.dispose();
+      reticleTexture.dispose();
+      labelMaterial.dispose();
+      labelTexture.dispose();
       stageMaterials.forEach(m => m.dispose());
       stageGeometries.forEach(g => g.dispose());
       env.dispose();

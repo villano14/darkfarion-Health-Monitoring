@@ -21,7 +21,7 @@
   min-height: 0;
   overflow: hidden;
   /* Matches the 3D stage background until the scene paints. */
-  background: #0a1526;
+  background: var(--bg);
 }
 .scene { position: absolute; inset: 0; }
 .scene canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }

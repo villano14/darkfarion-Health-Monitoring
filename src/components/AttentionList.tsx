@@ -1,46 +1,52 @@
-import {CircleCheck} from 'lucide-react';
-import type {GroupState} from '../health/data';
-import {GROUPS, type GroupId} from '../health/model';
-import {GROUP_ICON, StatusIcon} from './ui';
+import type {GroupState, Log} from '../health/data';
+import {latest} from '../health/data';
+import {GROUPS, format, indicatorsOf, type GroupId, type Status} from '../health/model';
 import {useI18n} from '../i18n';
 
 interface Props {
   states: Record<GroupId, GroupState>;
+  log: Log;
+  day: number;
   selected: GroupId | null;
   onSelect: (id: GroupId) => void;
 }
 
-const RANK = {alert: 0, watch: 1, normal: 2};
+const RANK: Record<Status, number> = {alert: 0, watch: 1, normal: 2};
 
-/** Floating list of affected systems: the only color on the body page besides the body itself. */
-export default function AttentionList({states, selected, onSelect}: Props) {
-  const {t, groupName} = useI18n();
-  const flagged = GROUPS.filter(g => states[g.id].status !== 'normal')
-    .sort((a, b) => RANK[states[a.id].status] - RANK[states[b.id].status]);
-  if (!flagged.length) {
-    return (
-      <div className="attention attention-clear" role="status">
-        <CircleCheck aria-hidden="true" />
-        {t('body.allClear')}
-      </div>
-    );
-  }
+/**
+ * Object index: every body system as an object on a star chart, ranked by magnitude
+ * (alert > watch > in range), with the reading that decides its state.
+ */
+export default function AttentionList({states, log, day, selected, onSelect}: Props) {
+  const L = useI18n(), {t, groupName, status: statusWord} = L;
+  const flagged = GROUPS.filter(g => states[g.id].status !== 'normal').length;
+  const rows = [...GROUPS].sort((a, b) => RANK[states[a.id].status] - RANK[states[b.id].status]).map(g => {
+    const status = states[g.id].status;
+    // The reading behind the state: the worst indicator of the system, else its first one.
+    const readings = indicatorsOf(g.id).map(base => {
+      const i = L.ind(base), {value} = latest(log, i.id, day);
+      return {i, value, status: value ? i.assess(value).status : ('normal' as Status)};
+    }).filter(r => r.value);
+    const lead = readings.sort((a, b) => RANK[a.status] - RANK[b.status])[0];
+    return {g, status, lead};
+  });
+
   return (
     <section className="attention" aria-label={t('body.atRiskLabel')}>
-      <h2 className="attention-title">{t('body.atRisk', {n: flagged.length})}</h2>
+      <h2 className="attention-title label">{flagged ? t('body.atRisk', {n: flagged}) : t('body.allClear')}</h2>
       <ul>
-        {flagged.map(g => {
-          const Icon = GROUP_ICON[g.id];
-          return (
-            <li key={g.id}>
-              <button className={`attention-item attention-${states[g.id].status}${selected === g.id ? ' is-active' : ''}`} onClick={() => onSelect(g.id)}>
-                <Icon aria-hidden="true" />
-                <span>{groupName(g.id)}</span>
-                <StatusIcon status={states[g.id].status} />
-              </button>
-            </li>
-          );
-        })}
+        {rows.map(({g, status, lead}) => (
+          <li key={g.id}>
+            <button className={`attention-item attention-${status}${selected === g.id ? ' is-active' : ''}`} onClick={() => onSelect(g.id)}>
+              <span className={`mag mag-${status}`} aria-hidden="true" />
+              <span className="attention-name">{groupName(g.id)}</span>
+              <span className="attention-meta">
+                {lead && <span className="attention-value">{format(lead.i, lead.value)} <span className="muted">{lead.i.unit}</span></span>}
+                <span className="attention-status">{statusWord(status)}</span>
+              </span>
+            </button>
+          </li>
+        ))}
       </ul>
     </section>
   );

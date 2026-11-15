@@ -9,7 +9,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 /** Mission control: people, roles and missions. */
 export default function AdminPage() {
-  const {t, env: envName} = useI18n();
+  const {t, env: envName, title: titleText} = useI18n();
   const [users, setUsers] = useState<(ApiUser & {mission: string; title: string})[]>([]);
   const [missions, setMissions] = useState<(ApiMission & {members: number})[]>([]);
   const [user, setUser] = useState({name: '', email: '', password: '', role: 'astronaut' as Role, missionId: 0, title: ''});
@@ -87,7 +87,7 @@ export default function AdminPage() {
                 <tr key={u.id}>
                   <td><strong>{u.name}</strong><br /><span className="muted">{u.email}</span></td>
                   <td><span className={`role-chip role-${u.role}`}>{t(`role.${u.role}`)}</span></td>
-                  <td>{u.mission || '—'}{u.title && <><br /><span className="muted">{u.title}</span></>}</td>
+                  <td>{u.mission || '—'}{u.title && <><br /><span className="muted">{titleText(u.title)}</span></>}</td>
                 </tr>
               ))}
             </tbody>

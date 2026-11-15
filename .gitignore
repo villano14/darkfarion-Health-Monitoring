@@ -4,3 +4,6 @@ dist
 .DS_Store
 .env*
 !.env.example
+
+# Herramientas de diseño (bocetos, capturas, referencias): no son parte del proyecto
+.impeccable/

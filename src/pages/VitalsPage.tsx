@@ -1,5 +1,5 @@
 import {useEffect, useMemo, useState, type FormEvent} from 'react';
-import {ArrowRight, Camera, CircleCheck, ClipboardList} from 'lucide-react';
+import {ArrowRight, Camera, CircleCheck, ClipboardList, Angry, Frown, Laugh, Meh, Smile} from 'lucide-react';
 import CameraPulse from '../components/CameraPulse';
 import {
   DAILY,
@@ -16,7 +16,7 @@ interface Props {
 }
 
 type Draft = Partial<Record<IndicatorId, string[]>>;
-const MOODS = ['😣', '🙁', '😐', '🙂', '😄'];
+const MOODS = [Angry, Frown, Meh, Smile, Laugh];
 const RANK: Record<Status, number> = {alert: 0, watch: 1, normal: 2};
 
 const toDraft = (v: Props['initial']): Draft =>
@@ -86,19 +86,19 @@ export default function VitalsPage({initial, onSave, onViewBody}: Props) {
               return (
                 <fieldset key={i.id} className={`field field-${status}`}>
                   <legend>
-                    <span className={`dot dot-${status}`} aria-hidden="true" />
+                    {status !== 'empty' && <span className={`mag mag-${status}`} aria-hidden="true" />}
                     {i.label}
                   </legend>
                   {i.input === 'scale' ? (
                     <div className="mood" role="radiogroup" aria-label={i.label}>
-                      {MOODS.map((m, n) => (
-                        <label key={m} className="mood-option">
+                      {MOODS.map((Face, n) => (
+                        <label key={n} className="mood-option">
                           <input
                             type="radio" name="mood" value={n + 1}
                             checked={draft.mood?.[0] === String(n + 1)}
                             onChange={() => set('mood', 0, String(n + 1))}
                           />
-                          <span aria-label={t('vitals.moodOf', {n: n + 1})}>{m}</span>
+                          <span aria-label={t('vitals.moodOf', {n: n + 1})}><Face aria-hidden="true" /></span>
                         </label>
                       ))}
                     </div>
@@ -134,7 +134,7 @@ export default function VitalsPage({initial, onSave, onViewBody}: Props) {
 
         <aside className="assessment" aria-live="polite" aria-labelledby="assessment-title">
           <div className="section-head">
-            <h2 id="assessment-title">{t('vitals.assessment')}</h2>
+            <h2 id="assessment-title" className="name">{t('vitals.assessment')}</h2>
             <span className="muted">{t('vitals.count', {a: readings.length, b: DAILY.length})}</span>
           </div>
 

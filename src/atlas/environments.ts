@@ -23,7 +23,7 @@ export interface StagePreset {
 export const STAGES: Record<EnvironmentId, StagePreset> = {
   // Low Earth orbit aboard the station.
   iss: {
-    background: 0x0a1526, ground: 0x16202e, platform: 0x1b2738, ring: 0x5d7c9b,
+    background: 0x0a1021, ground: 0x111a2e, platform: 0x182338, ring: 0x5d7c9b,
     hemiSky: 0x8fb8ff, hemiGround: 0x1a2433, hemiIntensity: 1.05,
     keyColor: 0xfff4e6, keyIntensity: 2.6, rimColor: 0x7fb6ff, rimIntensity: 2.0,
     stars: true, exposure: 1.14,

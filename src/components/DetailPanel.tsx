@@ -1,5 +1,5 @@
 import {useState, type ReactNode} from 'react';
-import {BookOpen, ListChecks, TriangleAlert, X} from 'lucide-react';
+import {X} from 'lucide-react';
 import {latest, series, type GroupState, type Log} from '../health/data';
 import {
   GROUP, actionsFor, format, indicatorsOf,
@@ -49,13 +49,16 @@ export default function DetailPanel({group, log, day, env, state, onClose, repor
 
   const riskCards = flagged.length > 0 ? flagged.map(({i, a}) => (
     <Card key={`risk-${i.id}`} className={`risk-card risk-card-${a.status}`}>
-      <div className="card-kicker"><TriangleAlert aria-hidden="true" />{L.status(a.status)}</div>
-      <h3>{L.risk(i, a)}</h3>
+      <h3 className="plate-head">
+        <span className={`mag mag-${a.status}`} aria-hidden="true" />
+        {L.risk(i, a)}
+        <span className="status-word">{L.status(a.status)}</span>
+      </h3>
       <p>{i.why} {i.space}</p>
     </Card>
   )) : [
     <Card key="in-range" className="risk-card risk-card-normal">
-      <p className="in-range-text">{t('detail.inRange')}</p>
+      <p className="in-range-text"><span className="mag mag-normal" aria-hidden="true" />{t('detail.inRange')}</p>
     </Card>,
   ];
 
@@ -70,7 +73,7 @@ export default function DetailPanel({group, log, day, env, state, onClose, repor
         </Card>
       ),
       <Card key="plan" className="plan-card">
-        <div className="card-kicker"><ListChecks aria-hidden="true" />{flagged.length ? t('detail.doNow') : t('detail.keep')}</div>
+        <h3 className="label">{flagged.length ? t('detail.doNow') : t('detail.keep')}</h3>
         <ol className="plan-list">{plan.map(step => <li key={step}>{step}</li>)}</ol>
       </Card>,
     ];
@@ -116,7 +119,7 @@ export default function DetailPanel({group, log, day, env, state, onClose, repor
   if (tab === 'learn') {
     left = [
       <Card key="hazards" className="hazard-card">
-        <div className="card-kicker"><BookOpen aria-hidden="true" />{t('detail.hazards')}</div>
+        <h3 className="label">{t('detail.hazards')}</h3>
         <div className="tags">{g.hazards.map(h => <span key={h} className="tag">{L.hazard(h)}</span>)}</div>
       </Card>,
       ...rows.map(({i}) => (

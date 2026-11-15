@@ -4,12 +4,12 @@ import AnatomyScene, {type Highlight, type Insets, type ViewDirection} from './a
 import type {Atlas, Part, SystemId} from './atlas/anatomy';
 import {STAGES} from './atlas/environments';
 import EnvironmentSwitch from './components/EnvironmentSwitch';
-import {groupStates, useHealthLog, useNow, useProgress, useRoutine} from './health/data';
+import {groupStates, latest, useHealthLog, useNow, useProgress, useRoutine} from './health/data';
 import {useSpaceWeather} from './health/nasa';
 import {api} from './api/client';
 import {useSession} from './api/session';
 import {
-  ENVIRONMENTS, GROUP, GROUPS, TODAY, groupOfSystem,
+  ENVIRONMENTS, GROUP, GROUPS, TODAY, format, groupOfSystem, indicatorsOf,
   type EnvironmentId, type GroupId, type IndicatorId, type Reading, type Status,
 } from './health/model';
 import {useRoute} from './router';
@@ -34,7 +34,7 @@ import SpaceWeatherCard from './components/SpaceWeatherCard';
 const BLUE = '#a9c1e6';
 const BLUE_SELECTED = '#6f95d8';
 const BLUE_CONTEXT = '#c9d7ee';
-const RISK: Record<Exclude<Status, 'normal'>, string> = {watch: '#f7c531', alert: '#fc3d21'};
+const RISK: Record<Exclude<Status, 'normal'>, string> = {watch: '#ffb36b', alert: '#fc3d21'};
 /** The whole body: muscles and connective tissue included, shown translucent so inner organs stay visible. */
 const OVERVIEW: SystemId[] = ['muscular', 'connective', 'skeletal', 'cardiac', 'arterial', 'venous', 'nervous', 'respiratory', 'digestive', 'urinary', 'lymphatic', 'endocrine', 'sensory', 'reproductive'];
 const NO_INSETS: Insets = {top: 0, right: 0, bottom: 0};
@@ -175,9 +175,15 @@ export default function App() {
     return GROUPS.filter(g => states[g.id].status !== 'normal' && (!selected || selected === g.id)).map(g => {
       const status = states[g.id].status as Exclude<Status, 'normal'>;
       const inZone = g.focus ?? ((p: Part) => g.systems.includes(p.system));
-      return {ids: atlas.parts.filter(inZone).map(p => p.id), color: RISK[status], pulse: status === 'alert'};
+      // The reading behind the alert labels the zone on the stage.
+      const worst = indicatorsOf(g.id).map(base => {
+        const i = L.ind(base), {value} = latest(log, i.id, day);
+        return value ? {i, value, a: i.assess(value)} : null;
+      }).find(r => r?.a.status === status);
+      const label = worst ? {name: L.groupName(g.id), value: `${format(worst.i, worst.value)} ${worst.i.unit}`} : undefined;
+      return {ids: atlas.parts.filter(inZone).map(p => p.id), color: RISK[status], pulse: status === 'alert', label};
     });
-  }, [atlas, states, selected]);
+  }, [atlas, states, selected, log, day, L]);
   const opacity = useMemo<Partial<Record<SystemId, number>>>(() => {
     if (selected) return {};
     const atRisk = GROUPS.some(g => states[g.id].status !== 'normal');
@@ -236,7 +242,7 @@ export default function App() {
 
           {!loading && !error && !selected && (
             <div className="body-side">
-              <AttentionList states={states} selected={selected} onSelect={setSelected} />
+              <AttentionList states={states} log={log} day={day} selected={selected} onSelect={setSelected} />
               <SpaceWeatherCard weather={weather} simulated={simulateStorm} onSimulate={setSimulateStorm} />
             </div>
           )}
@@ -260,9 +266,9 @@ export default function App() {
 
           <div className="stage-bottom">
             <ul className="legend" aria-label={t('legend')}>
-              <li><span className="dot dot-blue" />{t('legend.normal')}</li>
-              <li><span className="dot dot-watch" />{t('legend.watch')}</li>
-              <li><span className="dot dot-alert" />{t('legend.alert')}</li>
+              <li><span className="mag mag-normal" aria-hidden="true" />{t('legend.normal')}</li>
+              <li><span className="mag mag-watch" aria-hidden="true" />{t('legend.watch')}</li>
+              <li><span className="mag mag-alert" aria-hidden="true" />{t('legend.alert')}</li>
             </ul>
             <div className="view-controls">
               <Segmented

@@ -8,6 +8,15 @@ import {EN_HAZARDS, ES_ENVIRONMENTS, ES_GROUPS, ES_HAZARDS, ES_INDICATORS, ES_SO
 
 export type Lang = 'en' | 'es';
 
+/** Crew positions are stored in English; the common ones read in Spanish on the Spanish UI. */
+const ES_TITLES: Record<string, string> = {
+  'Flight engineer': 'Ingeniera de vuelo',
+  'Commander': 'Comandante',
+  'Crew medical officer': 'Oficial médico de la tripulación',
+  'Mission specialist': 'Especialista de misión',
+  'Flight surgeon': 'Médica de vuelo',
+};
+
 const UI = {
   en: {
     'nav.body': 'Body',
@@ -56,6 +65,7 @@ const UI = {
     'crew.systems': 'Body systems',
     'crew.today': 'Check-in today: {a}/{b}',
     'crew.openAlerts': '{n} open alerts',
+    'crew.openAlert': '1 open alert',
     'crew.open': 'Open body',
     'crew.alerts': 'Alerts',
     'crew.showAcked': 'Show acknowledged',
@@ -96,9 +106,11 @@ const UI = {
     'status.watch': 'Watch',
     'status.alert': 'Alert',
     'legend': 'Legend',
-    'legend.normal': 'In range',
-    'legend.watch': 'Mild risk',
-    'legend.alert': 'High risk',
+    'legend.normal': 'Normal',
+    'legend.watch': 'Watch',
+    'legend.alert': 'Alert',
+    'routine.stripToday': 'done today',
+    'routine.stripStreak': 'day streak',
 
     'body.loading': 'Loading body model · {p}%',
     'body.loadError': 'The body model could not be loaded.',
@@ -287,6 +299,7 @@ const UI = {
     'crew.systems': 'Sistemas del cuerpo',
     'crew.today': 'Registro de hoy: {a}/{b}',
     'crew.openAlerts': '{n} alertas abiertas',
+    'crew.openAlert': '1 alerta abierta',
     'crew.open': 'Ver cuerpo',
     'crew.alerts': 'Alertas',
     'crew.showAcked': 'Mostrar atendidas',
@@ -327,9 +340,11 @@ const UI = {
     'status.watch': 'Vigilar',
     'status.alert': 'Alerta',
     'legend': 'Leyenda',
-    'legend.normal': 'En rango',
-    'legend.watch': 'Riesgo leve',
-    'legend.alert': 'Riesgo alto',
+    'legend.normal': 'Normal',
+    'legend.watch': 'Vigilar',
+    'legend.alert': 'Alerta',
+    'routine.stripToday': 'hechas hoy',
+    'routine.stripStreak': 'días de racha',
 
     'body.loading': 'Cargando modelo del cuerpo · {p}%',
     'body.loadError': 'No se pudo cargar el modelo del cuerpo.',
@@ -530,7 +545,8 @@ export function useI18n() {
         return ES_INDICATORS[i.id].risks[`${a.status}-${a.direction}`];
       },
       actions: (i: Indicator, a: Assessment) => actionsFor(ind(i), a),
-      role: MISSION.role,
+      role: es ? ES_TITLES[MISSION.role] ?? MISSION.role : MISSION.role,
+      title: (s: string) => (es ? ES_TITLES[s] ?? s : s),
     };
   }, [lang, setLang, t, es]);
 }

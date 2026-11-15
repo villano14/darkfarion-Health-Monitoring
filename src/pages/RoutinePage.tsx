@@ -24,7 +24,6 @@ export default function RoutinePage({tasks, completed, progress, canAct, onToggl
   const week = t('routine.weekdays').split(',');
   const next = tasks.find(x => x.state === 'overdue' || x.state === 'due') ?? tasks.find(x => x.state === 'upcoming');
   const today = (new Date().getDay() + 6) % 7;
-  const percent = Math.round((completed / tasks.length) * 100);
 
   return (
     <div className="page page-routine">
@@ -35,15 +34,21 @@ export default function RoutinePage({tasks, completed, progress, canAct, onToggl
         </div>
       </header>
 
-      <div className="routine-stats">
-        <section className="stat">
-          <span className="stat-label">{t('routine.todayStat')}</span>
-          <strong className="stat-value">{percent}%</strong>
-          <progress max={tasks.length} value={completed} aria-label={t('routine.tasksDone', {a: completed, b: tasks.length})} />
-        </section>
-        <section className="stat">
-          <span className="stat-label">{t('routine.streak')}</span>
-          <strong className="stat-value stat-streak"><Flame aria-hidden="true" />{t('routine.days', {n: streak})}</strong>
+      {/* One status line: what is next, how today is going, and the streak. */}
+      <section className="card routine-strip" aria-label={t('routine.todayStat')}>
+        {next && (
+          <div className={`strip-next strip-${next.state}`}>
+            <span className={`chip chip-${next.state === 'overdue' ? 'watch' : 'normal'}`}><Bell aria-hidden="true" />{next.state === 'upcoming' ? t('routine.next') : next.state === 'overdue' ? t('routine.overdue') : t('routine.due')}</span>
+            <strong className="name strip-task">{taskLabel(next)}</strong>
+            <span className="strip-time">{next.time}</span>
+            {canAct && next.kind === 'measure' && next.state !== 'upcoming' && (
+              <button className="btn btn-primary btn-small" onClick={onLog}>{t('routine.logNow')}</button>
+            )}
+          </div>
+        )}
+        <div className="strip-facts">
+          <span className="strip-fact"><strong>{t('routine.of', {a: completed, b: tasks.length})}</strong> {t('routine.stripToday')}</span>
+          <span className="strip-fact"><Flame aria-hidden="true" /><strong>{streak}</strong> {t('routine.stripStreak')}</span>
           <ol className="week" aria-label={t('routine.week')}>
             {week.map((d, i) => (
               <li key={d} className={i < today ? 'is-done' : i === today ? 'is-today' : ''}>
@@ -52,18 +57,9 @@ export default function RoutinePage({tasks, completed, progress, canAct, onToggl
               </li>
             ))}
           </ol>
-        </section>
-        {next && (
-          <section className={`stat stat-next stat-${next.state}`}>
-            <span className="stat-label"><Bell aria-hidden="true" />{next.state === 'upcoming' ? t('routine.next') : next.state === 'overdue' ? t('routine.overdue') : t('routine.due')}</span>
-            <strong className="stat-task">{taskLabel(next)}</strong>
-            <span className="muted">{next.time}</span>
-            {next.kind === 'measure' && next.state !== 'upcoming' && (
-              <button className="btn btn-primary btn-small" onClick={onLog}>{t('routine.logNow')}</button>
-            )}
-          </section>
-        )}
-      </div>
+        </div>
+        <progress max={tasks.length} value={completed} aria-label={t('routine.tasksDone', {a: completed, b: tasks.length})} />
+      </section>
 
       <div className="card">
         <Routine tasks={tasks} completed={completed} canAct={canAct} onToggle={onToggle} onLog={onLog} />

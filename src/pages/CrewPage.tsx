@@ -1,9 +1,8 @@
 import {useCallback, useEffect, useState, type FormEvent} from 'react';
-import {CheckCheck, Eye, MessageSquare, RefreshCw, Stethoscope, Users} from 'lucide-react';
+import {CheckCheck, Eye, MessageSquare, RefreshCw} from 'lucide-react';
 import {api, type Alert, type CrewMission} from '../api/client';
 import {useSession} from '../api/session';
 import {GROUPS, INDICATOR, format, type GroupId, type IndicatorId} from '../health/model';
-import {StatusIcon} from '../components/ui';
 import {useI18n} from '../i18n';
 
 interface Props {
@@ -13,7 +12,7 @@ interface Props {
 
 /** Crew overview for the crew medical officer, the flight surgeon and mission control. */
 export default function CrewPage({onOpen}: Props) {
-  const {t, groupName, indById, status: statusLabel, tier: tierText} = useI18n();
+  const {t, groupName, indById, status: statusLabel, tier: tierText, title: titleText} = useI18n();
   const {role} = useSession();
   const [missions, setMissions] = useState<CrewMission[] | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -55,7 +54,7 @@ export default function CrewPage({onOpen}: Props) {
 
       {missions?.map(({mission, crew}) => (
         <section key={mission.id} className="crew-mission" aria-label={mission.name}>
-          <h2 className="crew-mission-title"><Users aria-hidden="true" />{mission.name}<span className="muted">{t('crew.day', {d: mission.day, n: mission.plannedDays})}</span></h2>
+          <h2 className="crew-mission-title"><span className="name">{mission.name}</span><span className="muted">{t('crew.day', {d: mission.day, n: mission.plannedDays})}</span></h2>
           <ul className="crew-grid">
             {crew.map(p => (
               <li key={p.id} className={`card crew-card crew-${p.status}`}>
@@ -63,7 +62,7 @@ export default function CrewPage({onOpen}: Props) {
                   <span className="avatar" aria-hidden="true">{p.initials}</span>
                   <div>
                     <strong>{p.name}</strong>
-                    <span className="muted">{p.title}</span>
+                    <span className="muted">{titleText(p.title)}</span>
                   </div>
                   {p.tier !== 'none' && <span className={`tier-chip tier-${p.tier}`}>{tierText(p.tier).label}</span>}
                 </div>
@@ -72,15 +71,15 @@ export default function CrewPage({onOpen}: Props) {
                     const s = p.groups[g.id]?.status ?? 'normal';
                     return (
                       <li key={g.id} className={`crew-group crew-group-${s}`} title={`${groupName(g.id as GroupId)}: ${statusLabel(s)}`}>
-                        <StatusIcon status={s} />
-                        <span>{groupName(g.id as GroupId)}</span>
+                        <span className={`mag mag-${s}`} aria-hidden="true" />
+                        <span>{groupName(g.id as GroupId)}<span className="sr-only">: {statusLabel(s)}</span></span>
                       </li>
                     );
                   })}
                 </ul>
                 <div className="crew-card-foot">
                   <span className="muted">{t('crew.today', {a: p.todayDone, b: p.todayTotal})}</span>
-                  {p.openAlerts > 0 && <span className="crew-alerts">{t('crew.openAlerts', {n: p.openAlerts})}</span>}
+                  {p.openAlerts > 0 && <span className="crew-alerts">{p.openAlerts === 1 ? t('crew.openAlert') : t('crew.openAlerts', {n: p.openAlerts})}</span>}
                   <button className="btn btn-secondary btn-small" onClick={() => onOpen(p.id)}><Eye aria-hidden="true" />{t('crew.open')}</button>
                 </div>
               </li>
@@ -91,7 +90,7 @@ export default function CrewPage({onOpen}: Props) {
 
       <section className="card crew-alerts-card" aria-labelledby="alerts-title">
         <div className="section-head">
-          <h2 id="alerts-title"><Stethoscope aria-hidden="true" />{t('crew.alerts')}</h2>
+          <h2 id="alerts-title" className="name">{t('crew.alerts')}</h2>
           <label className="check">
             <input type="checkbox" checked={showAll} onChange={e => setShowAll(e.target.checked)} />
             {t('crew.showAcked')}
@@ -105,9 +104,10 @@ export default function CrewPage({onOpen}: Props) {
             return (
               <li key={a.id} className={`alert-item alert-${a.tier}${a.ackedAt ? ' is-acked' : ''}`}>
                 <div className="alert-head">
-                  <span className={`tier-chip tier-${a.tier}`}>{tierText(a.tier).label}</span>
+                  <span className={`mag mag-${a.status}`} aria-hidden="true" />
                   <strong>{a.userName}</strong>
-                  <span>{text?.label ?? a.indicator}: {ind ? format(ind, a.value) : a.value.join('/')} {text?.unit}</span>
+                  <span className="alert-reading">{text?.label ?? a.indicator}: {ind ? format(ind, a.value) : a.value.join('/')} {text?.unit}</span>
+                  <span className={`tier-chip tier-${a.tier}`}>{tierText(a.tier).label}</span>
                   <span className="muted">{t('crew.dayShort', {d: a.day})}</span>
                 </div>
                 {a.ackedAt && <p className="muted alert-acked"><CheckCheck aria-hidden="true" />{t('crew.ackedBy', {name: a.ackedBy ?? ''})}</p>}

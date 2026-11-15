@@ -9,12 +9,12 @@ html, body, #root {
   font-family: var(--font);
   font-size: var(--t-body);
   line-height: 1.5;
-  font-feature-settings: 'cv11', 'ss01';
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
 }
 
 h1, h2, h3, p, dl, dd { margin: 0; }
-h2 { font-size: var(--t-title); font-weight: 650; letter-spacing: -0.015em; line-height: 1.3; }
+h2 { font-size: var(--t-title); font-weight: 600; letter-spacing: -0.01em; line-height: 1.3; }
 h3 { font-size: var(--t-body); font-weight: 600; line-height: 1.4; }
 ul, ol { margin: 0; padding: 0; list-style: none; }
 
@@ -22,11 +22,77 @@ button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 button:disabled { cursor: not-allowed; }
 
+/* The parts the browser draws carry the chart too */
+::selection { background: var(--nasa-blue); color: var(--ink); }
+input, select { caret-color: var(--alert); }
 :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+* { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 0; }
+::-webkit-scrollbar-track { background: transparent; }
+a { text-underline-offset: 3px; }
 
-svg.lucide { width: 18px; height: 18px; flex: none; stroke-width: 2; }
+svg.lucide { width: 18px; height: 18px; flex: none; stroke-width: 1.75; }
 
 .muted { color: var(--muted); }
+
+/* Names of objects (body systems, people, missions) are set like constellation names on a chart. */
+.name { font-family: var(--font-name); font-style: italic; font-weight: 500; letter-spacing: 0; }
+
+/* Region labels: tracked capitals in star red, on a hairline that runs out to the frame edge. */
+.label {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--alert-ink);
+}
+.label::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--line-strong), transparent); }
+.label-plain::after { content: none; }
+
+/* Chart plates: hairline frame with registration ticks at the corners. */
+.plate, .card, .stat, .assessment, .float-card, .attention, .weather, .env-switch {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.plate::before, .card::before, .stat::before, .assessment::before, .float-card::before, .attention::before, .weather::before, .env-switch::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--line-strong), var(--line-strong)) top left / 9px 1px,
+    linear-gradient(var(--line-strong), var(--line-strong)) top left / 1px 9px,
+    linear-gradient(var(--line-strong), var(--line-strong)) top right / 9px 1px,
+    linear-gradient(var(--line-strong), var(--line-strong)) top right / 1px 9px,
+    linear-gradient(var(--line-strong), var(--line-strong)) bottom left / 9px 1px,
+    linear-gradient(var(--line-strong), var(--line-strong)) bottom left / 1px 9px,
+    linear-gradient(var(--line-strong), var(--line-strong)) bottom right / 9px 1px,
+    linear-gradient(var(--line-strong), var(--line-strong)) bottom right / 1px 9px;
+  background-repeat: no-repeat;
+}
+
+/* Magnitude: severity as dot diameter on a fixed ramp. Always paired with a word. */
+.mag {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.mag::before {
+  content: '';
+  width: var(--mag-normal);
+  height: var(--mag-normal);
+  border-radius: 50%;
+  background: var(--normal);
+}
+.mag-watch::before { width: var(--mag-watch); height: var(--mag-watch); background: var(--watch); }
+.mag-alert::before { width: var(--mag-alert); height: var(--mag-alert); background: var(--alert); box-shadow: 0 0 0 3px var(--bg), 0 0 0 4px var(--alert); }
 
 .sr-only {
   position: absolute;
