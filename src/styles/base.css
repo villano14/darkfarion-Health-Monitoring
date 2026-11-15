@@ -1,5 +1,13 @@
 *, *::before, *::after { box-sizing: border-box; }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+  accent-color: var(--primary);
+  caret-color: var(--primary);
+  scrollbar-color: var(--line-strong) transparent;
+}
+
 html, body, #root {
   margin: 0;
   height: 100%;
@@ -9,24 +17,52 @@ html, body, #root {
   font-family: var(--font);
   font-size: var(--t-body);
   line-height: 1.5;
-  font-feature-settings: 'cv11', 'ss01';
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 h1, h2, h3, p, dl, dd { margin: 0; }
-h2 { font-size: var(--t-title); font-weight: 650; letter-spacing: -0.015em; line-height: 1.3; }
-h3 { font-size: var(--t-body); font-weight: 600; line-height: 1.4; }
+h1, h2, h3 { text-wrap: balance; }
+h2 { font-size: var(--t-title); font-weight: 600; letter-spacing: -0.02em; line-height: 1.25; }
+h3 { font-size: var(--t-read); font-weight: 600; letter-spacing: -0.01em; line-height: 1.35; }
+p { text-wrap: pretty; }
 ul, ol { margin: 0; padding: 0; list-style: none; }
 
 button, input, select { font: inherit; color: inherit; }
-button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+button { cursor: pointer; -webkit-user-select: none; user-select: none; }
 button:disabled { cursor: not-allowed; }
+a, button, label, [role='tab'] { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+a { color: var(--primary); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+::selection { background: #1c67e333; color: var(--ink); }
+::placeholder { color: var(--muted); opacity: 1; }
+
+/* Numbers are typed, not nudged: hide the spinners */
+input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* Thin themed scrollbars on WebKit too */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border: 3px solid transparent; border-radius: 999px; background-clip: padding-box; }
+::-webkit-scrollbar-track { background: transparent; }
 
 :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
-svg.lucide { width: 18px; height: 18px; flex: none; stroke-width: 2; }
+svg.lucide { width: 18px; height: 18px; flex: none; stroke-width: 1.75; }
 
 .muted { color: var(--muted); }
+
+/* Telemetry voice: measured values and small tracked labels */
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.micro {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  letter-spacing: var(--track-micro);
+  text-transform: uppercase;
+  line-height: 1.3;
+}
 
 .sr-only {
   position: absolute;

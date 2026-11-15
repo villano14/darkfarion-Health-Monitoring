@@ -1,5 +1,5 @@
-import {useState, type ReactNode} from 'react';
-import {BookOpen, ListChecks, TriangleAlert, X} from 'lucide-react';
+import {useEffect, useRef, useState, type ReactNode} from 'react';
+import {BookOpen, CircleCheck, ListChecks, X} from 'lucide-react';
 import {latest, series, type GroupState, type Log} from '../health/data';
 import {
   GROUP, actionsFor, format, indicatorsOf,
@@ -22,6 +22,22 @@ interface Props {
   state: GroupState;
   onClose: () => void;
   report: () => string;
+}
+
+/** Fades the bottom edge of a card column while more cards wait below it. */
+function useScrollFade(deps: unknown[]) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => el.classList.toggle('is-scrollable', el.scrollHeight - el.scrollTop - el.clientHeight > 8);
+    update();
+    el.addEventListener('scroll', update, {passive: true});
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => { el.removeEventListener('scroll', update); observer.disconnect(); };
+  }, deps);
+  return ref;
 }
 
 /** One floating card around the body. */
@@ -49,17 +65,19 @@ export default function DetailPanel({group, log, day, env, state, onClose, repor
 
   const riskCards = flagged.length > 0 ? flagged.map(({i, a}) => (
     <Card key={`risk-${i.id}`} className={`risk-card risk-card-${a.status}`}>
-      <div className="card-kicker"><TriangleAlert aria-hidden="true" />{L.status(a.status)}</div>
+      <StatusChip status={a.status} />
       <h3>{L.risk(i, a)}</h3>
       <p>{i.why} {i.space}</p>
     </Card>
   )) : [
     <Card key="in-range" className="risk-card risk-card-normal">
-      <p className="in-range-text">{t('detail.inRange')}</p>
+      <CircleCheck aria-hidden="true" />
+      <p>{t('detail.inRange')}</p>
     </Card>,
   ];
 
   let left: ReactNode[] = [], right: ReactNode[] = [];
+  const leftCol = useScrollFade([tab, range, log]), rightCol = useScrollFade([tab, range, log]);
 
   if (tab === 'status') {
     left = [
@@ -155,8 +173,8 @@ export default function DetailPanel({group, log, day, env, state, onClose, repor
         />
         <button className="icon-btn" onClick={onClose} aria-label={t('detail.close')}><X aria-hidden="true" /></button>
       </header>
-      <div className="cards-col cards-left" role="tabpanel">{left}</div>
-      <div className="cards-col cards-right">{right}</div>
+      <div className="cards-col cards-left" role="tabpanel" ref={leftCol}>{left}</div>
+      <div className="cards-col cards-right" ref={rightCol}>{right}</div>
     </div>
   );
 }

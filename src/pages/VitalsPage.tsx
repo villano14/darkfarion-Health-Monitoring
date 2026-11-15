@@ -1,5 +1,5 @@
 import {useEffect, useMemo, useState, type FormEvent} from 'react';
-import {ArrowRight, Camera, CircleCheck, ClipboardList} from 'lucide-react';
+import {Angry, ArrowRight, Camera, CircleCheck, ClipboardList, Frown, Laugh, Meh, Smile} from 'lucide-react';
 import CameraPulse from '../components/CameraPulse';
 import {
   DAILY,
@@ -16,7 +16,8 @@ interface Props {
 }
 
 type Draft = Partial<Record<IndicatorId, string[]>>;
-const MOODS = ['😣', '🙁', '😐', '🙂', '😄'];
+/** Mood scale 1–5, drawn from the same icon family as the rest of the UI. */
+const MOODS = [Angry, Frown, Meh, Smile, Laugh];
 const RANK: Record<Status, number> = {alert: 0, watch: 1, normal: 2};
 
 const toDraft = (v: Props['initial']): Draft =>
@@ -84,14 +85,14 @@ export default function VitalsPage({initial, onSave, onViewBody}: Props) {
                   </legend>
                   {i.input === 'scale' ? (
                     <div className="mood" role="radiogroup" aria-label={i.label}>
-                      {MOODS.map((m, n) => (
-                        <label key={m} className="mood-option">
+                      {MOODS.map((Face, n) => (
+                        <label key={n} className="mood-option">
                           <input
                             type="radio" name="mood" value={n + 1}
                             checked={draft.mood?.[0] === String(n + 1)}
                             onChange={() => set('mood', 0, String(n + 1))}
                           />
-                          <span aria-label={t('vitals.moodOf', {n: n + 1})}>{m}</span>
+                          <span className="mood-face"><Face aria-hidden="true" /><span className="sr-only">{t('vitals.moodOf', {n: n + 1})}</span></span>
                         </label>
                       ))}
                     </div>
@@ -100,7 +101,7 @@ export default function VitalsPage({initial, onSave, onViewBody}: Props) {
                       {(i.input === 'bp' ? [t('vitals.sys'), t('vitals.dia')] : [i.label]).map((label, n) => (
                         <input
                           key={label} type="number" inputMode="decimal" aria-label={label}
-                          placeholder={i.input === 'bp' ? label : i.range.split('–')[0]}
+                          placeholder={i.input === 'bp' ? label : t('vitals.eg', {v: i.range.split('–')[0]})}
                           min={i.min} max={i.max} step={i.step}
                           value={draft[i.id]?.[n] ?? ''}
                           onChange={e => set(i.id, n, e.target.value)}
@@ -164,7 +165,7 @@ export default function VitalsPage({initial, onSave, onViewBody}: Props) {
                   <p className="finding-text">{i.why}</p>
                   <p className="finding-next"><strong>{t('vitals.next')}</strong> {L.actions(i, a)[0]}</p>
                   <button type="button" className="link-btn" onClick={() => onViewBody(i.group)}>
-                    {t('vitals.see', {name: L.groupName(i.group).toLowerCase()})} <ArrowRight aria-hidden="true" />
+                    {t('vitals.see', {name: L.groupName(i.group).toLowerCase()})} <ArrowRight className="arrow-go" aria-hidden="true" />
                   </button>
                 </li>
               );

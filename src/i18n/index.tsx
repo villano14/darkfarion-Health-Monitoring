@@ -85,6 +85,7 @@ const UI = {
     'routine.weekdays': 'Mon,Tue,Wed,Thu,Fri,Sat,Sun',
     'routine.tasksDone': '{a} of {b} tasks done',
     'routine.logNow': 'Log now',
+    'routine.allDone': 'All done for today',
 
     'timeline.pause': 'Pause',
     'timeline.replay': 'Replay mission',
@@ -97,6 +98,7 @@ const UI = {
     'vitals.sys': 'Sys',
     'vitals.dia': 'Dia',
     'vitals.moodOf': '{n} of 5',
+    'vitals.eg': 'e.g. {v}',
     'vitals.savedAt': 'Saved at {t}',
     'vitals.save': 'Save readings',
     'vitals.assessment': 'Assessment',
@@ -242,6 +244,7 @@ const UI = {
     'routine.weekdays': 'Lun,Mar,Mié,Jue,Vie,Sáb,Dom',
     'routine.tasksDone': '{a} de {b} tareas hechas',
     'routine.logNow': 'Registrar ahora',
+    'routine.allDone': 'Todo listo por hoy',
 
     'timeline.pause': 'Pausar',
     'timeline.replay': 'Reproducir misión',
@@ -254,6 +257,7 @@ const UI = {
     'vitals.sys': 'Sis',
     'vitals.dia': 'Dia',
     'vitals.moodOf': '{n} de 5',
+    'vitals.eg': 'ej. {v}',
     'vitals.savedAt': 'Guardado a las {t}',
     'vitals.save': 'Guardar lecturas',
     'vitals.assessment': 'Evaluación',

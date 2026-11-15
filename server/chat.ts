@@ -33,7 +33,7 @@ Safety:
 
 Style:
 - Reply in the language named in <language>.
-- Be warm, calm and brief: two to five short sentences or a short numbered list. No headings, no tables.
+- Be warm, calm and brief: two to five short sentences or a short numbered list. No headings, no tables, no emojis.
 - Use the crew member's actual numbers when relevant.`;
 
 type Turn = {role: 'user' | 'assistant'; content: string};

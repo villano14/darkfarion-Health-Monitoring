@@ -32,6 +32,7 @@ export default function RoutinePage({tasks, completed, streak, onToggle, onLog}:
         <section className="stat">
           <span className="stat-label">{t('routine.todayStat')}</span>
           <strong className="stat-value">{percent}%</strong>
+          <span className="stat-sub">{completed === tasks.length ? t('routine.allDone') : t('routine.tasksDone', {a: completed, b: tasks.length})}</span>
           <progress max={tasks.length} value={completed} aria-label={t('routine.tasksDone', {a: completed, b: tasks.length})} />
         </section>
         <section className="stat">

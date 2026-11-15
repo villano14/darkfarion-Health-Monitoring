@@ -27,7 +27,7 @@ export default function AttentionList({states, selected, onSelect}: Props) {
   }
   return (
     <section className="attention" aria-label={t('body.atRiskLabel')}>
-      <h2 className="attention-title">{t('body.atRisk', {n: flagged.length})}</h2>
+      <h2 className="attention-title micro">{t('body.atRisk', {n: flagged.length})}</h2>
       <ul>
         {flagged.map(g => {
           const Icon = GROUP_ICON[g.id];

@@ -1,40 +1,52 @@
 /*
- * Design tokens.
- * Brand: NASA Blue #0B3D91 (the one accent) and NASA Red #FC3D21 (alerts only).
- * Added for health status: green (normal) and amber (watch), each with a dark ink for text.
- * The interface stays mostly neutral; color is reserved for actions and status.
+ * Design tokens — the nasa.gov visual language applied to a working tool.
+ * Black shell, white work surface, a strict gray scale, square corners.
+ * NASA Red (#f64137) is the one loud ink: alerts and the arrow-circle on links that take you somewhere.
+ * NASA's interactive blue (#1c67e3) marks focus, links and selection. Status colors appear only where they mean something.
+ * Geist carries the interface; Geist Mono carries measured data and small tracked labels (telemetry readouts).
  */
 :root {
-  /* Neutrals */
-  --bg: #f4f6f9;
-  --bg-sunken: #eceff4;
+  /* Neutrals (nasa.gov gray scale) */
+  --shell: #17171b;
+  --shell-2: #2e2e32;
+  --bg: #f6f6f6;
+  --bg-sunken: #ececed;
   --surface: #ffffff;
-  --ink: #0b1426;
-  --ink-2: #2b3547;
-  --muted: #566070;
-  --line: #0b14261c;
-  --line-strong: #0b142638;
+  --ink: #1b1b1b;
+  --ink-2: #2e2e32;
+  --muted: #58585b;
+  --subtle: #959599;
+  --line: #e3e3e3;
+  --line-strong: #d1d1d1;
+  --line-input: #b9b9bb;
 
   /* NASA brand */
   --nasa-blue: #0b3d91;
-  --nasa-red: #fc3d21;
+  --nasa-red: #f64137;
 
-  /* Accent (actions, links, focus, selection) */
-  --primary: var(--nasa-blue);
-  --primary-hover: #0a3274;
-  --primary-soft: #e8eef8;
-  --primary-line: #0b3d9133;
+  /* Interactive (links, focus, selection) */
+  --primary: #1c67e3;
+  --primary-hover: #1554bd;
+  --primary-soft: #e8f0fd;
+  --primary-line: #1c67e340;
 
   /* Status */
   --alert: var(--nasa-red);
-  --alert-ink: #b3260f;
-  --alert-soft: #ffede9;
+  --alert-ink: #b60109;
+  --alert-soft: #fdeceb;
+  --alert-line: #f6413747;
   --watch: #f2b705;
   --watch-ink: #7a5300;
-  --watch-soft: #fff5d6;
+  --watch-soft: #fff6d9;
+  --watch-line: #f2b70566;
   --normal: #2e9e6b;
   --normal-ink: #1b6b47;
-  --normal-soft: #e5f5ec;
+  --normal-soft: #e7f5ee;
+  --normal-line: #2e9e6b55;
+
+  /* Body model base tone (legend dot, crew range) and Orbi's sky */
+  --body-base: #8fb0e2;
+  --orbi-sky: #dbe8fb;
 
   /* Spacing scale (4 → 48) */
   --s-1: 4px;
@@ -45,42 +57,42 @@
   --s-6: 32px;
   --s-7: 48px;
 
-  /* One radius family */
-  --r-sm: 8px;
-  --r-md: 12px;
-  --r-lg: 20px;
+  /* Square by default, like nasa.gov. Round is reserved for icon buttons and dots. */
+  --r-sm: 2px;
+  --r-md: 2px;
+  --r-lg: 4px;
   --r-pill: 999px;
 
-  /* Type */
-  --font: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* Type: one family for the interface, its mono for data */
+  --font: 'Geist Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --t-micro: 11px;
   --t-label: 13px;
   --t-body: 15px;
   --t-read: 16px;
-  --t-title: 18px;
-  --t-figure: 26px;
+  --t-title: 20px;
+  --t-figure: 28px;
+  --t-h1: 32px;
+  --track-micro: 0.08em;
 
-  /* Elevation */
-  --shadow-sm: 0 1px 2px #0b14260a;
-  --shadow: 0 1px 2px #0b14260a, 0 8px 24px #0b14260f;
-  --shadow-lg: 0 24px 64px #0b142633;
+  /* Elevation: borders do the work; shadows only lift what floats over the 3D stage */
+  --shadow-sm: 0 1px 2px #17171b0d;
+  --shadow: 0 2px 8px #17171b14;
+  --shadow-lg: 0 16px 48px #17171b2e;
 
   /* Motion */
   --m-in: 150ms;
   --m-out: 120ms;
   --m-press: 90ms;
-  --m-slide: 240ms;
+  --m-slide: 220ms;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 
   /* Shell */
   --btn-h: 44px;
-  --top-h: 64px;
-  --time-h: 64px;
-  --detail-w: 380px;
+  --top-h: 60px;
+  --time-h: 60px;
   --tab-h: 64px;
-}
-
-@media (max-width: 1100px) {
-  :root { --detail-w: 340px; }
 }
 
 @media (max-width: 760px) {

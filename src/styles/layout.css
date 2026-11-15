@@ -38,7 +38,7 @@
 .page {
   min-height: 0;
   overflow-y: auto;
-  padding: var(--s-6) var(--s-5) var(--s-7);
+  padding: var(--s-6) var(--s-5) 112px;
 }
 .page > * { max-width: 1120px; margin-left: auto; margin-right: auto; }
 .page-routine > * { max-width: 760px; }
@@ -46,6 +46,7 @@
 @media (max-width: 760px) {
   .app { grid-template-rows: var(--top-h) minmax(0, 1fr) var(--tab-h); }
   .page-body, .page { grid-row: 2; }
-  .page { padding: var(--s-5) var(--s-4) var(--s-6); }
+  /* Bottom room so the last row scrolls clear of Orbi */
+  .page { padding: var(--s-5) var(--s-4) 96px; }
 
 }
